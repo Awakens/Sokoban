@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The properties in this file are loaded when the HangMan game application
+    first loads.
+-->
+<properties>
+    <property_list>    
+        <property name="WINDOW_ICON"                value="HangManWindowIcon.png"></property>
+        <property name="SPLASH_SCREEN_TITLE_TEXT"   value="Select a Language"></property>
+        <property name="WINDOW_WIDTH"               value="800"></property>
+        <property name="WINDOW_HEIGHT"              value="620"></property>
+        <property name="SPLASH_SCREEN_IMAGE_NAME"   value="HangManSplashScreen.png"></property>
+        <property name="DATA_PATH"                  value="./data/"></property>
+        <property name="IMG_PATH"                   value="./img/"></property>
+        <property name="LETTERS_FONT_FAMILY"        value="monospaced"></property>
+        <property name="LETTERS_FONT_SIZE"          value="24"></property>
+        <property name="GUESSES_FONT_FAMILY"        value="monospaced"></property>
+        <property name="GUESSES_FONT_SIZE"          value="22"></property>
+        <property name="GUESS_FONT_SIZE"            value="36"></property>
+        <property name="GUESS_FONT_FAMILY"          value="monospaced"></property>
+        <property name="DEFAULT_YES_TEXT"           value="Yes"></property>
+        <property name="DEFAULT_NO_TEXT"            value="No"></property>
+        <property name="DEFAULT_EXIT_TEXT"          value="Are you sure you wish to Quit?"></property>
+    </property_list>
+    <property_options_list>
+        <property_options name="LANGUAGE_OPTIONS">
+            <option>English</option>
+            <option>Esperanto</option>
+            <option>Romanian</option>
+        </property_options>
+        <property_options name="LANGUAGE_DATA_FILE_NAMES">
+            <option>EN.xml</option>
+            <option>EO.xml</option>
+            <option>FR.xml</option>
+        </property_options>
+        <property_options name="LANGUAGE_IMAGE_NAMES">
+            <option>EN.png</option>
+            <option>EO.png</option>
+            <option>FR.png</option>
+        </property_options>
+    </property_options_list>
+</properties>

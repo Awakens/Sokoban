@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+    <property_list>    
+        <property name="GAME_TITLE_TEXT" value="HangMan - La kvin letero vorto ludo."></property>
+        
+        <!-- THESE ARE THE GUI IMAGES -->
+        <property name="GAME_IMG_NAME"      value="EO_Ludo.png"></property>
+        <property name="STATS_IMG_NAME"     value="EO_Estadsticas.png"></property>
+        <property name="HELP_IMG_NAME"      value="EO_Helpo.png"></property>
+        <property name="EXIT_IMG_NAME"      value="EO_Eliro.png"></property>
+        <property name="NEW_GAME_IMG_NAME"  value="EO_NovaLudo.png"></property>
+        <property name="HOME_IMG_NAME"      value="EO_Hejmo.png"></property>
+         <property name="HANGMAN0_IMG_NAME"          value="Hangman0.png"></property>
+        <property name="HANGMAN1_IMG_NAME"          value="Hangman1.png"></property>
+        <property name="HANGMAN2_IMG_NAME"          value="Hangman2.png"></property>
+        <property name="HANGMAN3_IMG_NAME"          value="Hangman3.png"></property>
+        <property name="HANGMAN4_IMG_NAME"          value="Hangman4.png"></property>
+        <property name="HANGMAN5_IMG_NAME"          value="Hangman5.png"></property>
+        <property name="HANGMAN6_IMG_NAME"          value="Hangman6.png"></property>
+        <!-- DATA FILES TO LOAD -->
+        <property name="WORD_LIST_FILE_NAME"    value="EO_KvinLeteroVortlisto.txt"></property>
+        <property name="GAME_FILE_NAME"         value="EO_LudoEkrano.html"></property>
+        <property name="STATS_FILE_NAME"        value="EO_StatsEkrano.html"></property>
+        <property name="HELP_FILE_NAME"         value="EO_Helpo.html"></property>
+        
+        <!-- IN-GAME TEXT -->
+        <property name="GUESS_LABEL"            value="Divenu: "></property>
+        <property name="GAME_SUBHEADER_TEXT"    value="Divenojn (nombro de literoj en sekreta vorto)"></property>
+        <property name="WIN_DISPLAY_TEXT"       value="Vi venkos!"></property>
+        <property name="LOSE_DISPLAY_TEXT"       value="Vi perdas!"></property>
+        <property name="GAME_RESULTS_TEXT"      value="LUDO REZULATOJN"></property>
+        <property name="EXIT_REQUEST_TEXT"      value="Ĉu vi certas ke vi volas Quit?"></property>
+        <property name="YES_TEXT"               value="Jes"></property>
+        <property name="NO_TEXT"                value="Neniu"></property>
+        
+        <!-- TOOLTIPS -->
+        <property name="GAME_TOOLTIP"           value="Iru al Game Ekrano"></property>
+        <property name="STATS_TOOLTIP"          value="Iru al Stats Resumo Ekrano"></property>
+        <property name="HELP_TOOLTIP"           value="Go to Help Ekrano"></property>
+        <property name="EXIT_TOOLTIP"           value="Eliro La Ludo Apliko"></property>
+        <property name="NEW_GAME_TOOLTIP"       value="Komenci Nova Ludo"></property>
+        <property name="HOME_TOOLTIP"           value="Iri Hejmen al HangMan Helpo Paĝo"></property>
+        
+        <!-- ERROR FEEDBACK TEXT -->
+        <property name="ERROR_DIALOG_TITLE_TEXT"            value="An Eraro Ĉu okazis"></property>
+        <property name="DUPLICATE_WORD_ERROR_TEXT"          value="Tiu vorto estis jam divenis"></property>
+        <property name="IMAGE_LOADING_ERROR_TEXT"           value="Bildo ne povis ŝarĝi adekvate"></property>
+        <property name="INVALID_URL_ERROR_TEXT"             value="Provante montru paĝo kun nevalidan URL"></property>
+        <property name="INVALID_DOC_ERROR_TEXT"             value="Eraro renkontis redaktas malnovan HTML-Dokumenton"></property>
+        <property name="INVALID_XML_FILE_ERROR_TEXT"        value="Nevalida XML propraĵoj dosieron"></property>
+        <property name="INVALID_GUESS_LENGTH_ERROR_TEXT"    value="Guess devas havi kvin karakteroj"></property>
+        <property name="WORD_NOT_IN_DICTIONARY_ERROR_TEXT"  value="Supozas ke ne estas trovita en la vortaro"></property>
+        <property name="INVALID_DICTIONARY_ERROR_TEXT"      value="Okazis eraro ŝarĝante la vortaro"></property>
+    </property_list>    
+    
+    <!-- AND NOW THE ESPERANTO ALPHABET -->
+    <property_options_list>
+        <property_options name="LETTER_OPTIONS">
+            <option>A</option>
+            <option>B</option>
+            <option>C</option>
+            <option>Ĉ</option>
+            <option>D</option>
+            <option>E</option>
+            <option>F</option>
+            <option>G</option>
+            <option>Ĝ</option>
+            <option>H</option>
+            <option>Ĥ</option>
+            <option>I</option>
+            <option>J</option>
+            <option>Ĵ</option>
+            <option>K</option>
+            <option>L</option>
+            <option>M</option>
+            <option>N</option>
+            <option>O</option>
+            <option>P</option>
+            <option>R</option>
+            <option>S</option>
+            <option>Ŝ</option>
+            <option>T</option>
+            <option>U</option>
+            <option>Ŭ</option>
+            <option>V</option>
+            <option>Z</option>
+        </property_options>
+    </property_options_list>
+</properties>
