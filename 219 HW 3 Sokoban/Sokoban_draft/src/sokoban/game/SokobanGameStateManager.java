@@ -239,5 +239,107 @@ public class SokobanGameStateManager {
         // THE GAME IS OFFICIALLY UNDERWAY
         currentGameState = SokobanGameState.GAME_IN_PROGRESS;
     }
+    /*
+ public int getWins()
+    {
+        // ITERATE THROUGH ALL THE COMPLETED GAMES
+        Iterator<HangManGameData> it = gamesHistory.iterator();
+        int wins = 0;
+        while(it.hasNext())
+        {
+            // GET THE NEXT GAME IN THE SEQUENCE
+            HangManGameData game = it.next();
+            
+            // IF IT ENDED IN A WIN, INC THE COUNTER
+            if (game.isWordFound())
+                wins++;
+        }
+        return wins;
+    }
+    
+  
+    public int getLosses()
+    {
+        // ITERATE THROUGH ALL THE COMPLETED GAMES
+        Iterator<HangManGameData> it = gamesHistory.iterator();
+        int losses = 0;
+        while(it.hasNext())
+        {
+            // GET THE NEXT GAME IN THE SEQUENCE
+            HangManGameData game = it.next();
+
+            // IF IT ENDED IN A LOSS, INC THE COUNTER
+            if (!game.isWordFound())
+                losses++;
+        }
+        return losses;
+    }
+public HangManGameData getFewestGuessesWin()
+    {
+        // IF NO GAMES HAVE BEEN PLAYED, THERE IS
+        // NOTHING TO RETURN
+        if (gamesHistory.isEmpty())
+            return null;
+        
+        // NOTE THAT ALL THE GAMES PLAYED MAY BE LOSSES
+        HangManGameData fewest = null;
+        
+        // GO THROUGH ALL THE GAMES THAT HAVE BEEN PLAYED
+        Iterator<HangManGameData> it = gamesHistory.iterator();        
+        while(it.hasNext())
+        {
+            // GET THE NEXT GAME IN THE SEQUENCE
+            HangManGameData game = it.next();
+            
+            // WE ONLY CONSIDER GAMES THAT WERE WON
+            if (game.isWordFound())
+            {
+                // IF IT'S THE FIRST WIN FOUND, START OUT
+                // WITH IT AS THE FEWEST UNTIL WE FIND ONE BETTER
+                if (fewest == null)
+                    fewest = game;
+                // OTHERWISE IF IT TOOK THE FEWEST GUESSES THEN
+                // MAKE IT THE FEWEST           
+                else if (game.getNumGuesses() < fewest.getNumGuesses())
+                    fewest = game;
+            }
+        }
+        // RETURN THE GAME THAT TOOK THE FEWEST GUESSES
+        return fewest;        
+    }
+
+public SokobanGameData getFastestWin()
+    {
+        // IF NO GAMES HAVE BEEN PLAYED, THERE IS
+        // NOTHING TO RETURN
+        if (gamesHistory.isEmpty())
+            return null;
+
+        // NOTE THAT ALL THE GAMES PLAYED MAY BE LOSSES
+        SokobanGameData fastest = null;
+
+        // GO THROUGH ALL THE GAMES THAT HAVE BEEN PLAYED
+        Iterator<SokobanGameData> it = gamesHistory.iterator();
+        while(it.hasNext())
+        {
+            // GET THE NEXT GAME IN THE SEQUENCE
+            SokobanGameData game = it.next();
+
+            // WE ONLY CONSIDER GAMES THAT WERE WON
+            if (game.isWordFound())
+            {
+                // IF IT'S THE FIRST WIN FOUND, START OUT
+                // WITH IT AS THE FASTEST UNTIL WE FIND ONE BETTER
+                if (fastest == null)
+                    fastest = game;
+                // OTHERWISE IF IT IS FASTER THEN
+                // MAKE IT THE FASTEST           
+                else if (game.getTimeOfGame() < fastest.getTimeOfGame())
+                    fastest = game;
+            }
+        }
+        // RETURN THE FASTEST GAME
+        return fastest;        
+    */
 
 }

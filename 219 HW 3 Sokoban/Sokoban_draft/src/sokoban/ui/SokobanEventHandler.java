@@ -40,7 +40,9 @@ public class SokobanEventHandler {
 
         ui.changeWorkspace(uiState);
     }
-
+   
+    
+   
     /**
      * This method responds to when the user presses the new game method.
      */

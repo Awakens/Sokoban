@@ -1,7 +1,21 @@
 package sokoban.ui;
 
+import Sokoban.ui.SokobanDocumentManager;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import sokoban.file.SokobanFileLoader;
+import sokoban.game.SokobanGameData;
+import sokoban.game.SokobanGameStateManager;
+import application.Main.SokobanPropertyType;
+import properties_manager.PropertiesManager;
+
+import javax.swing.JEditorPane;
+import javax.swing.text.Document;
+import javax.swing.text.html.HTMLDocument;
 
 import javax.swing.JEditorPane;
 import sokoban.game.SokobanGameStateManager;
@@ -11,7 +25,9 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import javafx.embed.swing.SwingNode;
 import properties_manager.PropertiesManager;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -33,6 +49,8 @@ import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javax.swing.JScrollPane;
+import javax.swing.text.html.HTMLDocument;
+import sokoban.file.SokobanFileLoader;
 import sun.audio.AudioPlayer;
 import sun.audio.AudioStream;
 
@@ -85,6 +103,8 @@ public class SokobanUI extends Pane {
     int sokoJ;
     int SokoI; int SokoJ;
   int placesNeeded; int numBoxes; int numBoxesBlocked;
+  SwingNode statsSwingNode = new SwingNode();
+
     
             // images
         Image wallImage = new Image("file:images/wall.png");
@@ -128,12 +148,12 @@ public class SokobanUI extends Pane {
     // THIS CLASS WILL HANDLE ALL ACTION EVENTS FOR THIS PROGRAM
     private SokobanEventHandler eventHandler;
     private SokobanErrorHandler errorHandler;
-    private SokobanDocumentManager docManager;
+    private SokobanDocumentManager docManager = null;
 
     SokobanGameStateManager gsm;
 
    public void Media(String x){return; }
-    public SokobanUI() {
+    public void SokobanUI() {
         gsm = new SokobanGameStateManager(this);
         eventHandler = new SokobanEventHandler(this);
         errorHandler = new SokobanErrorHandler(primaryStage);
@@ -484,6 +504,46 @@ public void respondToSelectLevelRequest(String level) {    //check
                  AudioStream audioStream = new AudioStream(fileStream);
                  AudioPlayer.player.start(audioStream);      
        }
+    public void loadPage(JEditorPane jep, SokobanPropertyType fileProperty) {
+		// GET THE FILE NAME
+		PropertiesManager props = PropertiesManager.getPropertiesManager();
+		String fileName = props.getProperty(fileProperty);
+		try {
+			// LOAD THE HTML INTO THE EDITOR PANE
+			String fileHTML = SokobanFileLoader.loadTextFile(fileName);
+			jep.setText(fileHTML);
+		} catch (IOException ioe) {
+			errorHandler.processError(SokobanPropertyType.INVALID_URL_ERROR_TEXT);
+		}
+	}
+    private void initStatsPane()
+    {
+        // WE'LL DISPLAY ALL STATS IN A JEditorPane
+        statsPane = new JEditorPane();
+        statsPane.setEditable(false);
+        statsPane.setContentType("text/html");
+       
+ 
+        // LOAD THE STARTING STATS PAGE, WHICH IS JUST AN OUTLINE
+        // AND DOESN"T HAVE ANY OF THE STATS, SINCE THOSE WILL 
+        // BE DYNAMICALLY ADDED
+        loadPage(statsPane, SokobanPropertyType.STATS_FILE_NAME);
+        HTMLDocument statsDoc = (HTMLDocument)statsPane.getDocument();
+            docManager.setStatsDoc(statsDoc);  
+        statsSwingNode.setContent(statsPane);
+        statsScrollPane = new ScrollPane();
+        statsScrollPane.setContent(statsSwingNode);
+        statsScrollPane.setPrefWidth(mainPane.getWidth());   //check
+        statsScrollPane.setPrefHeight(mainPane.getHeight());  
+        statsScrollPane.setFitToWidth(true);
+         statsScrollPane.setFitToHeight(true);
+
+        
+        // NOW ADD IT TO THE WORKSPACE, MEANING WE CAN SWITCH TO IT
+        //workspace.add(statsScrollPane, HangManUIState.VIEW_STATS_STATE.toString());
+        workspace.getChildren().add(statsScrollPane);     //check
+        statsScrollPane.setVisible(false);   //set invisible initially
+    }
 
 class GridRenderer extends Canvas {
 
@@ -502,6 +562,9 @@ class GridRenderer extends Canvas {
         }
 
         public void repaint() {
+            placesNeeded = 0;
+            numBoxes = 0;
+            numBoxesBlocked = 0;
             gc = this.getGraphicsContext2D();
             gc.clearRect(0, 0, this.getWidth(), this.getHeight());
 
@@ -529,7 +592,12 @@ class GridRenderer extends Canvas {
                             break;
                         case 2:
                             gc.drawImage(boxImage, x, y, w, h);
-                            break;
+                            numBoxes++;
+                            //if box is cornered
+                            if((grid[i+1][j] == 1 && grid[i][j+1] == 1) || (grid[i+1][j] == 1 && grid[i][j-1] == 1)
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 1) || (grid[i-1][j] == 1 && grid[i][j-1] == 1))
+                              numBoxesBlocked++;
+                                break;
                         case 3:
                             gc.drawImage(placeImage, x, y, w, h);
                             placesNeeded++;    //number of places
@@ -541,9 +609,15 @@ class GridRenderer extends Canvas {
                             break;
                         case 5:
                             gc.drawImage(boxImage, x, y, w, h);    //box over place
+                            numBoxes++;
+                             //if box is cornered
+                            if((grid[i+1][j] == 1 && grid[i][j+1] == 1) || (grid[i+1][j] == 1 && grid[i][j-1] == 1)
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 1) || (grid[i-1][j] == 1 && grid[i][j-1] == 1))
+                              numBoxesBlocked++;
                             break;
                         case 6:
                             gc.drawImage(sokobanImage, x, y, w, h);   //sokoban over place
+                            placesNeeded++;
                             SokoI = i;   //save coordinates
                             SokoJ = j;
                             break;
