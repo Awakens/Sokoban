@@ -1,21 +1,7 @@
 package sokoban.ui;
 
-import Sokoban.ui.SokobanDocumentManager;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import sokoban.file.SokobanFileLoader;
-import sokoban.game.SokobanGameData;
-import sokoban.game.SokobanGameStateManager;
-import application.Main.SokobanPropertyType;
-import properties_manager.PropertiesManager;
-
-import javax.swing.JEditorPane;
-import javax.swing.text.Document;
-import javax.swing.text.html.HTMLDocument;
 
 import javax.swing.JEditorPane;
 import sokoban.game.SokobanGameStateManager;
@@ -26,7 +12,9 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.embed.swing.SwingNode;
 import properties_manager.PropertiesManager;
 import javafx.event.ActionEvent;
@@ -49,16 +37,12 @@ import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javax.swing.JScrollPane;
-import javax.swing.text.html.HTMLDocument;
+       import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import sokoban.file.SokobanFileLoader;
-import sun.audio.AudioPlayer;
-import sun.audio.AudioStream;
 
 public class SokobanUI extends Pane {
-
-    private static InputStream FileInputStream(String tunngle_Quitwav) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
      
     /**
      * The SokobanUIState represents the four screen states that are possible
@@ -104,8 +88,10 @@ public class SokobanUI extends Pane {
     int SokoI; int SokoJ;
   int placesNeeded; int numBoxes; int numBoxesBlocked;
   SwingNode statsSwingNode = new SwingNode();
-
-    
+  ArrayList<int[][]> moveStack;
+  GridRenderer gridRenderer;
+    private File file = new File("C:/Users/Jim/Desktop/219 Depository/219 HW 3 Sokoban/Sokoban_draft/Tunngle_Quit.wav");
+    private final String MEDIA_URL = file.toURI().toString();
             // images
         Image wallImage = new Image("file:images/wall.png");
         Image boxImage = new Image("file:images/box.png");
@@ -123,6 +109,7 @@ public class SokobanUI extends Pane {
     private HBox letterButtonsPane;
     private HashMap<Character, Button> letterButtons;
     private BorderPane gamePanel = new BorderPane();
+
 
     //StatsPane
     private ScrollPane statsScrollPane;
@@ -148,20 +135,21 @@ public class SokobanUI extends Pane {
     // THIS CLASS WILL HANDLE ALL ACTION EVENTS FOR THIS PROGRAM
     private SokobanEventHandler eventHandler;
     private SokobanErrorHandler errorHandler;
-    private SokobanDocumentManager docManager = null;
+    private SokobanDocumentManager docManager;
 
     SokobanGameStateManager gsm;
 
    public void Media(String x){return; }
-    public void SokobanUI() {
+   
+    public SokobanUI() {
         gsm = new SokobanGameStateManager(this);
         eventHandler = new SokobanEventHandler(this);
         errorHandler = new SokobanErrorHandler(primaryStage);
         docManager = new SokobanDocumentManager(this);
         initMainPane();
         initNorthToolbar();//check
-	try {
-            fallSound(); System.out.println("yay");
+	try {  moveSound();
+            System.out.println("yay");
         } catch (Exception ex) {System.out.println("nope");
            // Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -256,7 +244,6 @@ public class SokobanUI extends Pane {
             // AND BUILD THE BUTTON
             Button levelButton = new Button();
             levelButton.setGraphic(levelImageView);
-            System.out.println(level);
             // CONNECT THE BUTTON TO THE EVENT HANDLER
             levelButton.setOnAction(new EventHandler<ActionEvent>() {
 
@@ -266,7 +253,7 @@ public class SokobanUI extends Pane {
                    
                     changeWorkspace(SokobanUIState.PLAY_GAME_STATE);   //check
                   respondToSelectLevelRequest(level);  //check
-                   //check form the levels?
+                   
                 }
             });
             // TODO
@@ -275,10 +262,17 @@ public class SokobanUI extends Pane {
         }
 
         mainPane.setCenter(splashScreenPane);
-        splashScreenPane.getChildren().add(levelSelectionPane);  //check not showing up
+        splashScreenPane.getChildren().add(levelSelectionPane);  
        //mainPane.setBottom(levelSelectionPane);  
         
     }
+    
+    public void moveSound() throws Exception 
+    {  Media media = new Media(MEDIA_URL);
+MediaPlayer mediaPlayer = new MediaPlayer(media);
+mediaPlayer.play();
+    MediaView mediaView = new MediaView(mediaPlayer);
+    mainPane.setTop(mediaView);}
   
 public void respondToSelectLevelRequest(String level) {    //check
       FileChooser fileChooser = new FileChooser();
@@ -311,8 +305,7 @@ public void respondToSelectLevelRequest(String level) {    //check
                     int initGridColumns = dis.readInt();
                     int initGridRows = dis.readInt();
                     int[][] newGrid = new int[initGridColumns][initGridRows];
-                    placesNeeded = 0;
-
+                    moveStack = new ArrayList<int[][]>(0);  //check if need to change init range
                     // AND NOW ALL THE CELL VALUES
                     for (int i = 0; i < initGridColumns; i++) {
                         for (int j = 0; j < initGridRows; j++) {
@@ -329,21 +322,37 @@ public void respondToSelectLevelRequest(String level) {    //check
                 e.printStackTrace();
             }
             
-          
-           GridRenderer gridRenderer = new GridRenderer();  
+          gridRenderer = null;
+          gridRenderer = new GridRenderer();  
          gridRenderer.setWidth(500);
          gridRenderer.setHeight(500);
+         gamePanel.getChildren().clear();
          gamePanel.setTop(undoButton);
          gamePanel.setLeft(TheBox);
          gamePanel.setRight(gridRenderer);
-         TheBox.getChildren().addAll(backButton, winLabel, loseLabel, OK);
+         TheBox.getChildren().clear();
+         TheBox.getChildren().addAll(backButton, undoButton, winLabel, loseLabel, OK);
          winLabel.setVisible(false); loseLabel.setVisible(false); OK.setVisible(false);
          backButton.setFocusTraversable(false);
          backButton.setOnAction(e ->   
-          { initSplashScreen();
+          {  
+  
+        initSplashScreen();
          });
+          undoButton.setFocusTraversable(false);
+         undoButton.setOnAction(e -> {
+                // TODO Auto-generated method stub
+              //  eventHandler.UNDO(something)   //check
+                System.out.println("moveStack is size " + moveStack.size());
+                if(moveStack.size() > 0)
+                {grid = moveStack.get(moveStack.size()-1);    //updates grid from top of stack
+                moveStack.remove(moveStack.size()-1);
+                gridRenderer.repaint();}
+        });
+    
          gridRenderer.repaint();
-        /* gridRenderer.setOnMouseDragged(mouseEvent ->  {
+         
+          /* gridRenderer.setOnMouseDragged(mouseEvent ->  {
              double w = gridRenderer.getWidth() / gridColumns;
             double col = mouseEvent.getX() / w;
             double h = gridRenderer.getHeight() / gridRows;
@@ -360,6 +369,7 @@ public void respondToSelectLevelRequest(String level) {    //check
             double h = gridRenderer.getHeight() / gridRows;
             double row = mouseEvent.getY() / h;
             
+                    
                 sokoI = gridRenderer.getSokoI();    //check sokobon placement
                 sokoJ = gridRenderer.getSokoJ();
                 
@@ -368,12 +378,20 @@ public void respondToSelectLevelRequest(String level) {    //check
              gridRenderer.focusedProperty();
              gridRenderer.isFocused();
              gridRenderer.minWidth(mainPane.getWidth());
-            gridRenderer.setOnKeyPressed(e -> { 
+      
+         gridRenderer.setOnKeyPressed(e -> { 
+            try{ moveSound();}
+            catch(Exception ex){}
+               moveStack.add(grid);  //save original level grid 
                 sokoI = gridRenderer.getSokoI();    //check sokobon placement
                 sokoJ = gridRenderer.getSokoJ();
                 switch (e.getCode()) { 
                 case DOWN: if(grid[sokoI][sokoJ+1] == 0)     //check if panel below is empty
-                {   grid[sokoI][sokoJ+1] = (grid[sokoI][sokoJ]);   //move sokoban by 1 row if panel below is empty
+                {   grid[sokoI][sokoJ+1] = 4;   //move sokoban by 1 row if panel below is empty
+                   if(grid[sokoI][sokoJ] == 6)
+                   {    grid[sokoI][sokoJ] = 3;
+                   grid[sokoI][sokoJ+1] = 4;  }     //turn new soko spot into regular soko
+                   else
                     grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from                   
                     SokoJ+=1; gridRenderer.repaint();               //incre soko placement
                     break;}
@@ -384,50 +402,93 @@ public void respondToSelectLevelRequest(String level) {    //check
       {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI][sokoJ+2] = (grid[sokoI][sokoJ+1]);       //move box  
-        grid[sokoI][sokoJ+1] = (grid[sokoI][sokoJ]);       //then move sokoban
-      grid[sokoI][sokoJ] = 0; SokoJ+=1;  gridRenderer.repaint(); //empty out the space where sokoban was
+        grid[sokoI][sokoJ+1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+        {   grid[sokoI][sokoJ] = 3;
+           grid[sokoI][sokoJ+1] = 4;  }     //turn new soko spot into regular soko
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ+=1;  gridRenderer.repaint(); 
              break;  }} //incre sokoban place
  if(grid[sokoI][sokoJ+1] == 3){     //ifplace
       grid[sokoI][sokoJ+1] = 6;   //move by row
+      if(grid[sokoI][sokoJ] == 6)
+          grid[sokoI][sokoJ] = 3;
         SokoJ+=1; gridRenderer.repaint();  break; }   
-                  if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
+                 
+         if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
       {if(grid[sokoI][sokoJ+2] == 1) {break;}   //continue if there box in panel below and the panel below box is not a wall
-      {  if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place under box
       {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI][sokoJ+2] = (grid[sokoI][sokoJ+1]);       //move box  
-        grid[sokoI][sokoJ+1] = 6;       //then move sokoban
+        grid[sokoI][sokoJ+1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
       grid[sokoI][sokoJ] = 0; SokoJ+=1;  gridRenderer.repaint(); break; //empty out the space where sokoban was
-      }}
+      }
  case UP: if(grid[sokoI][sokoJ-1] == 0)     //check if panel above is empty
-    {  grid[sokoI][sokoJ-1] = (grid[sokoI][sokoJ]);   //move sokoban up by 1 row if panel above is empty
+    {  grid[sokoI][sokoJ-1] = 4;   //move sokoban up by 1 row if panel above is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
        grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
       SokoJ-=1;  gridRenderer.repaint(); 
             break;}
       if(grid[sokoI][sokoJ-1] == 1) break;  //exit if wall
       if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
       {if(grid[sokoI][sokoJ-2] == 1) break;    //break if there box in panel below and the panel above box is not a wall or null
-      { if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+       if(grid[sokoI][sokoJ-2] == 3)    //if is a place
       {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
-        grid[sokoI][sokoJ-1] = (grid[sokoI][sokoJ]);       //then move sokoban
-      grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+        grid[sokoI][sokoJ-1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0; 
+        SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
  if(grid[sokoI][sokoJ-1] == 3){     //if place
       grid[sokoI][sokoJ-1] = 6;   //move by row
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
         SokoJ-=1;  gridRenderer.repaint(); break;
            }
-  if(grid[sokoI][sokoJ-1] == 5)    //if box in panel above
+  if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
       {if(grid[sokoI][sokoJ-2] == 1) break;    //break if there box in panel below and the panel above box is not a wall or null
       { if(grid[sokoI][sokoJ-2] == 3)    //if is a place
       {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
         grid[sokoI][sokoJ-1] = 6;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
       grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+ //redo for others  //come add time thread timeline
+   if(grid[sokoI][sokoJ-1] == 5)    //if box with place in panel above
+      { if(grid[sokoI][sokoJ-2] == 0)   //the panel above box is empty
+      {  grid[sokoI][sokoJ] = 2;
+        // grid[soko] //come
+      }
+          if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
+        grid[sokoI][sokoJ-1] = 6;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
  
  case LEFT: if(grid[sokoI-1][sokoJ] == 0)     //check if left panel  is empty
-    {  grid[sokoI-1][sokoJ] = (grid[sokoI][sokoJ]);   //move sokoban left by 1  if left panel is empty
+    {  grid[sokoI-1][sokoJ] = 4;   //move sokoban left by 1  if left panel is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
        grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
        SokoI-=1; gridRenderer.repaint();  
        break;}
@@ -439,9 +500,16 @@ public void respondToSelectLevelRequest(String level) {    //check
            placesNeeded--;}
         else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
         grid[sokoI-1][sokoJ] = (grid[sokoI][sokoJ]);       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
       grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
  if(grid[sokoI-1][sokoJ] == 3){     //if place
       grid[sokoI-1][sokoJ] = 6;   //move left
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
         SokoI-=1; gridRenderer.repaint(); break;
            }
     if(grid[sokoI-1][sokoJ] == 5)    //if box in left panel 
@@ -451,10 +519,16 @@ public void respondToSelectLevelRequest(String level) {    //check
            placesNeeded--;}
         else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
         grid[sokoI-1][sokoJ] = 6;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
       grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
  
  case RIGHT: if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
-    {  grid[sokoI+1][sokoJ] = (grid[sokoI][sokoJ]);   //move sokoban right by 1  if rigbht panel is empty
+    {  grid[sokoI+1][sokoJ] = 4;   //move sokoban right by 1  if rigbht panel is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
        grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
        SokoI+=1; gridRenderer.repaint(); 
        break;}
@@ -466,9 +540,17 @@ public void respondToSelectLevelRequest(String level) {    //check
            placesNeeded--;}
         else  grid[sokoI+2][sokoJ] = (grid[sokoI+1][sokoJ]);       //move box
         grid[sokoI+1][sokoJ] = (grid[sokoI][sokoJ]);       //then move sokoban
-         SokoI+=1; grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+         SokoI+=1; 
+         if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+             grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
  if(grid[sokoI+1][sokoJ] == 3){     //if place
-      grid[sokoI+1][sokoJ] = 6;   //move right   //come add cases for 5 and 6
+      grid[sokoI+1][sokoJ] = 6;   //move right   
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
           SokoI+=1; gridRenderer.repaint();  break;
            }
  if(grid[sokoI+1][sokoJ] == 5)    //if box with place in right panel 
@@ -478,19 +560,32 @@ public void respondToSelectLevelRequest(String level) {    //check
            placesNeeded--;}
         else  grid[sokoI+2][sokoJ] = (grid[sokoI+1][sokoJ]);       //move box
         grid[sokoI+1][sokoJ] = 6;       //then move sokoban ontop of place
-         SokoI+=1; grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+         SokoI+=1; 
+         if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+         grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
  } 
 
             if(placesNeeded == 0)
-            {winLabel.setVisible(true); OK.setVisible(true);}
-            if(numBoxesBlocked == numBoxes)
-            {loseLabel.setVisible(true); OK.setVisible(true);}
+            {winLabel.setVisible(true); OK.setVisible(true);
+             gridRenderer.setFocusTraversable(false);
            OK.setFocusTraversable(true);
+           OK.focusTraversableProperty();
+           OK.focusedProperty();}
+            if(numBoxesBlocked == numBoxes)
+            {loseLabel.setVisible(true); OK.setVisible(true);
+             gridRenderer.setFocusTraversable(false);
+           OK.setFocusTraversable(true);
+           OK.focusTraversableProperty();
+           OK.focusedProperty();}
+           
             OK.setOnAction(Enter -> {
            OK.setFocusTraversable(false);
            OK.setVisible(false);
            initSplashScreen();
             });
+          
         });
 }
     
@@ -498,12 +593,7 @@ public void respondToSelectLevelRequest(String level) {    //check
      *
      * @throws Exception
      */
-    public static void fallSound() throws Exception {
-         InputStream fileStream = FileInputStream("Tunngle_Quit.wav");
-         System.out.println("got inputstream");
-                 AudioStream audioStream = new AudioStream(fileStream);
-                 AudioPlayer.player.start(audioStream);      
-       }
+
     public void loadPage(JEditorPane jep, SokobanPropertyType fileProperty) {
 		// GET THE FILE NAME
 		PropertiesManager props = PropertiesManager.getPropertiesManager();
@@ -515,35 +605,62 @@ public void respondToSelectLevelRequest(String level) {    //check
 		} catch (IOException ioe) {
 			errorHandler.processError(SokobanPropertyType.INVALID_URL_ERROR_TEXT);
 		}
-	}
-    private void initStatsPane()
+	} 
+           
+
+private void initStatsPane()
     {
         // WE'LL DISPLAY ALL STATS IN A JEditorPane
         statsPane = new JEditorPane();
         statsPane.setEditable(false);
-        statsPane.setContentType("text/html");
-       
- 
+       // statsPane.setContentType("text/html");
+        //read from file
+       File fileToOpen = new File("hi.txt");
+            String fileName = fileToOpen.getPath();
+          try {
+                if (fileToOpen != null) {
+                    // LET'S USE A FAST LOADING TECHNIQUE. WE'LL LOAD ALL OF THE
+                    // BYTES AT ONCE INTO A BYTE ARRAY, AND THEN PICK THAT APART.
+                    // THIS IS FAST BECAUSE IT ONLY HAS TO DO FILE READING ONCE
+                    byte[] bytes = new byte[Long.valueOf(fileToOpen.length()).intValue()];
+                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+                    FileInputStream fis;
+            
+                fis = new FileInputStream(fileToOpen);
+             
+                    BufferedInputStream bis = new BufferedInputStream(fis);
+
+                    // HERE IT IS, THE ONLY READY REQUEST WE NEED
+                    bis.read(bytes);
+                    bis.close();
+
+                    // NOW WE NEED TO LOAD THE DATA FROM THE BYTE ARRAY
+                    DataInputStream dis = new DataInputStream(bais);
+    }} catch (Exception ex) {
+                Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
         // LOAD THE STARTING STATS PAGE, WHICH IS JUST AN OUTLINE
         // AND DOESN"T HAVE ANY OF THE STATS, SINCE THOSE WILL 
         // BE DYNAMICALLY ADDED
-        loadPage(statsPane, SokobanPropertyType.STATS_FILE_NAME);
+      /*  loadPage(statsPane, SokobanPropertyType.STATS_FILE_NAME);
         HTMLDocument statsDoc = (HTMLDocument)statsPane.getDocument();
             docManager.setStatsDoc(statsDoc);  
-        statsSwingNode.setContent(statsPane);
+       */ statsSwingNode.setContent(statsPane);
         statsScrollPane = new ScrollPane();
         statsScrollPane.setContent(statsSwingNode);
         statsScrollPane.setPrefWidth(mainPane.getWidth());   //check
         statsScrollPane.setPrefHeight(mainPane.getHeight());  
         statsScrollPane.setFitToWidth(true);
          statsScrollPane.setFitToHeight(true);
-
+         //read from file
+         
         
         // NOW ADD IT TO THE WORKSPACE, MEANING WE CAN SWITCH TO IT
         //workspace.add(statsScrollPane, HangManUIState.VIEW_STATS_STATE.toString());
         workspace.getChildren().add(statsScrollPane);     //check
         statsScrollPane.setVisible(false);   //set invisible initially
     }
+
 
 class GridRenderer extends Canvas {
 
@@ -648,6 +765,9 @@ class GridRenderer extends Canvas {
     }
 
 
+
+
+
     /**
      * This method initializes the language-specific game controls, which
      * includes the three primary game screens.
@@ -689,6 +809,7 @@ class GridRenderer extends Canvas {
         // MAKE AND INIT THE GAME BUTTON
         gameButton = initToolbarButton(northToolbar,
                 SokobanPropertyType.GAME_IMG_NAME);
+        gameButton.setText("Game");
         //setTooltip(gameButton, SokobanPropertyType.GAME_TOOLTIP);
         gameButton.setOnAction(new EventHandler<ActionEvent>() {
 
@@ -704,7 +825,7 @@ class GridRenderer extends Canvas {
         statsButton = initToolbarButton(northToolbar,
                 SokobanPropertyType.STATS_IMG_NAME);
         //setTooltip(statsButton, SokobanPropertyType.STATS_TOOLTIP);
-
+        statsButton.setText("Stats");
         statsButton.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
@@ -747,17 +868,7 @@ class GridRenderer extends Canvas {
         // AND NOW PUT THE NORTH TOOLBAR IN THE FRAME
         mainPane.setTop(northToolbar);
         //mainPane.getChildren().add(northToolbar);
-        undoButton = new Button("Undo");   //check
-        undoButton.setFocusTraversable(false);
-         undoButton.setOnAction(new EventHandler<ActionEvent>() {
-
-            @Override
-            public void handle(ActionEvent event) {
-                // TODO Auto-generated method stub
-              //  eventHandler.UNDO(something)   //check
-            }
-
-        });
+       
     }
 
     /**
