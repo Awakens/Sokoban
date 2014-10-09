@@ -12,15 +12,16 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.animation.Timeline;
 import javafx.embed.swing.SwingNode;
 import properties_manager.PropertiesManager;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
@@ -77,7 +78,7 @@ public class SokobanUI extends Pane {
     private Button exitButton;
     private Button backButton = new Button("Back");   //check
     private Button undoButton = new Button("Undo");
-    private VBox TheBox = new VBox();
+    private HBox TheBox = new HBox();
     private Label winLabel = new Label("You won!");
     private Label loseLabel = new Label("You Lose!");
     private Button OK = new Button("OK");
@@ -90,8 +91,22 @@ public class SokobanUI extends Pane {
   SwingNode statsSwingNode = new SwingNode();
   ArrayList<int[][]> moveStack;
   GridRenderer gridRenderer;
-    private File file = new File("C:/Users/Jim/Desktop/219 Depository/219 HW 3 Sokoban/Sokoban_draft/Tunngle_Quit.wav");
+    private File file = new File("move.wav");
     private final String MEDIA_URL = file.toURI().toString();
+    private File filer = new File("Counting+Stars+Background+Audio.wav");
+    private final String splashSounds = filer.toURI().toString();
+    private File fileWin = new File("win.wav");
+    private final String wonMe = fileWin.toURI().toString();
+    private File fileLose = new File("lose.wav");
+    private final String loseMe = fileLose.toURI().toString();
+    private static final Integer STARTTIME = 15;
+    private Timeline timeline;
+    private Label timerLabel = new Label();
+    private Integer timeSeconds = STARTTIME;
+    Group root = new Group();
+    
+    
+    
             // images
         Image wallImage = new Image("file:images/wall.png");
         Image boxImage = new Image("file:images/box.png");
@@ -148,11 +163,6 @@ public class SokobanUI extends Pane {
         docManager = new SokobanDocumentManager(this);
         initMainPane();
         initNorthToolbar();//check
-	try {  moveSound();
-            System.out.println("yay");
-        } catch (Exception ex) {System.out.println("nope");
-           // Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
-        }
         initSplashScreen();
       //  Media media = new Media("sample.mp4"); 
  //MediaPlayer mediaPlayer = new MediaPlayer(media); 
@@ -196,9 +206,40 @@ public class SokobanUI extends Pane {
         mainPane.resize(paneWidth, paneHeigth);
         mainPane.setPadding(marginlessInsets);
     }
-
+ /* public void TimeMe()
+   {  timerLabel.setText(timeSeconds.toString());
+        timerLabel.setTextFill(Color.RED);
+        timerLabel.setStyle("-fx-font-size: 4em;");
+          if (timeline != null) 
+            timeline.stop();
+          timeSeconds = STARTTIME;
+           timerLabel.setText(timeSeconds.toString());
+        timeline = new Timeline();
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.getKeyFrames().add(
+                new KeyFrame(Duration.seconds(1),
+                  new EventHandler() {
+                    // KeyFrame event handler
+                    public void handle(ActionEvent event) {
+                        timeSeconds--;
+                        // update timerLabel
+                        timerLabel.setText(
+                              timeSeconds.toString());
+                        if (timeSeconds <= 0) {
+                            timeline.stop();
+                        }
+                      }
+                }));
+        timeline.playFromStart();
+    }
+   */
     public void initSplashScreen() {
-
+        try {
+            splashSound(); System.out.println("good");
+        } catch (Exception ex) {
+            Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("nope");
+        }
         // INIT THE SPLASH SCREEN CONTROLS
         PropertiesManager props = PropertiesManager.getPropertiesManager();
         String splashScreenImagePath = props
@@ -273,6 +314,24 @@ MediaPlayer mediaPlayer = new MediaPlayer(media);
 mediaPlayer.play();
     MediaView mediaView = new MediaView(mediaPlayer);
     mainPane.setTop(mediaView);}
+    public void splashSound() throws Exception 
+    {  Media media = new Media(splashSounds);
+MediaPlayer mediaPlayer = new MediaPlayer(media);
+mediaPlayer.play();
+    MediaView mediaView = new MediaView(mediaPlayer);
+    mainPane.setTop(mediaView);}
+    public void winSound() throws Exception 
+    {  Media media = new Media(wonMe);
+MediaPlayer mediaPlayer = new MediaPlayer(media);
+mediaPlayer.play();
+    MediaView mediaView = new MediaView(mediaPlayer);
+    mainPane.setTop(mediaView);}
+    public void loseSound() throws Exception 
+    {  Media media = new Media(loseMe);
+MediaPlayer mediaPlayer = new MediaPlayer(media);
+mediaPlayer.play();
+    MediaView mediaView = new MediaView(mediaPlayer);
+    mainPane.setTop(mediaView);}
   
 public void respondToSelectLevelRequest(String level) {    //check
       FileChooser fileChooser = new FileChooser();
@@ -305,7 +364,7 @@ public void respondToSelectLevelRequest(String level) {    //check
                     int initGridColumns = dis.readInt();
                     int initGridRows = dis.readInt();
                     int[][] newGrid = new int[initGridColumns][initGridRows];
-                    moveStack = new ArrayList<int[][]>(0);  //check if need to change init range
+                    moveStack = new ArrayList<int[][]>(0); //resets moveStack since new game
                     // AND NOW ALL THE CELL VALUES
                     for (int i = 0; i < initGridColumns; i++) {
                         for (int j = 0; j < initGridRows; j++) {
@@ -327,9 +386,9 @@ public void respondToSelectLevelRequest(String level) {    //check
          gridRenderer.setWidth(500);
          gridRenderer.setHeight(500);
          gamePanel.getChildren().clear();
-         gamePanel.setTop(undoButton);
+         gamePanel.setTop(northToolbar);
          gamePanel.setLeft(TheBox);
-         gamePanel.setRight(gridRenderer);
+         gamePanel.setCenter(gridRenderer);
          TheBox.getChildren().clear();
          TheBox.getChildren().addAll(backButton, undoButton, winLabel, loseLabel, OK);
          winLabel.setVisible(false); loseLabel.setVisible(false); OK.setVisible(false);
@@ -382,7 +441,12 @@ public void respondToSelectLevelRequest(String level) {    //check
          gridRenderer.setOnKeyPressed(e -> { 
             try{ moveSound();}
             catch(Exception ex){}
-               moveStack.add(grid);  //save original level grid 
+              int[][] newArray = new int[grid.length][grid[0].length];
+              for(int o = 0; o < grid.length; o++)   //grid.length = columns   grid[0].length = rows
+              { for(int p = 0; p < grid[0].length; p++)
+              { newArray[o][p] = grid[o][p];
+              }}       
+               moveStack.add(newArray);  //save original level grid 
                 sokoI = gridRenderer.getSokoI();    //check sokobon placement
                 sokoJ = gridRenderer.getSokoJ();
                 switch (e.getCode()) { 
@@ -615,7 +679,7 @@ private void initStatsPane()
         statsPane.setEditable(false);
        // statsPane.setContentType("text/html");
         //read from file
-       File fileToOpen = new File("hi.txt");
+       File fileToOpen = new File("stats.txt");
             String fileName = fileToOpen.getPath();
           try {
                 if (fileToOpen != null) {
@@ -638,6 +702,7 @@ private void initStatsPane()
                     DataInputStream dis = new DataInputStream(bais);
     }} catch (Exception ex) {
                 Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
+                System.out.println("Error stats.txt does not exist");
             }
         // LOAD THE STARTING STATS PAGE, WHICH IS JUST AN OUTLINE
         // AND DOESN"T HAVE ANY OF THE STATS, SINCE THOSE WILL 
@@ -820,7 +885,7 @@ class GridRenderer extends Canvas {
                         .respondToSwitchScreenRequest(SokobanUIState.PLAY_GAME_STATE);
             }
         });
-
+        
         // MAKE AND INIT THE STATS BUTTON
         statsButton = initToolbarButton(northToolbar,
                 SokobanPropertyType.STATS_IMG_NAME);
@@ -836,7 +901,8 @@ class GridRenderer extends Canvas {
             }
 
         });
-        // MAKE AND INIT THE HELP BUTTON
+       
+        /*// MAKE AND INIT THE HELP BUTTON
         helpButton = initToolbarButton(northToolbar,
                 SokobanPropertyType.HELP_IMG_NAME);
         //setTooltip(helpButton, SokobanPropertyType.HELP_TOOLTIP);
@@ -864,7 +930,7 @@ class GridRenderer extends Canvas {
             }
 
         });
-
+*/
         // AND NOW PUT THE NORTH TOOLBAR IN THE FRAME
         mainPane.setTop(northToolbar);
         //mainPane.getChildren().add(northToolbar);
