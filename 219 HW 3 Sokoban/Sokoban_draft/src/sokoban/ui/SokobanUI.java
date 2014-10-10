@@ -18,19 +18,16 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.embed.swing.SwingNode;
 import properties_manager.PropertiesManager;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -39,12 +36,12 @@ import static javafx.scene.input.KeyCode.LEFT;
 import static javafx.scene.input.KeyCode.RIGHT;
 import static javafx.scene.input.KeyCode.U;
 import static javafx.scene.input.KeyCode.UP;
+import static javafx.scene.input.KeyCode.ENTER;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javax.swing.JScrollPane;
        import javafx.scene.media.Media;
@@ -325,14 +322,16 @@ mediaPlayerSplash.play();   mediaPlayerSplash.setCycleCount(500); mediaPlayerSpl
     MediaView mediaView = new MediaView(mediaPlayer);
     mainPane.setTop(mediaView);}
     public void winSound() throws Exception 
-    {  Media media = new Media(wonMe);
+    {  mediaPlayerSplash.stop();
+        Media media = new Media(wonMe);
 mediaPlayer = new MediaPlayer(media);
 mediaPlayer.play();
     MediaView mediaView = new MediaView(mediaPlayer);
-    mainPane.setTop(mediaView);}
+    mainPane.setTop(mediaView);
+    }
     public void loseSound() throws Exception 
-    {  Media media = new Media(loseMe);
-    mediaPlayer.stop();
+    { mediaPlayerSplash.stop();
+        Media media = new Media(loseMe);
 mediaPlayer = new MediaPlayer(media);
 mediaPlayer.play();
     MediaView mediaView = new MediaView(mediaPlayer);
@@ -345,6 +344,12 @@ mediaPlayer.play();
     mainPane.setTop(mediaView);}
   
 public void respondToSelectLevelRequest(String level) {    //check
+    /*   fileChooser.setTitle("Open Resource File");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Sokoban Files", "*.sok"));
+     File fileToOpen = fileChooser.showOpenDialog(primaryStage);  
+            String fileName = fileToOpen.getPath();
+    */
      File fileToOpen = new File("data/" + level + ".sok");
             String fileName = fileToOpen.toURI().toString(); System.out.println(fileName);
             try {
@@ -399,15 +404,24 @@ public void respondToSelectLevelRequest(String level) {    //check
          TheBox.getChildren().clear();
          time = new Timer();
          TheBox.getChildren().addAll(backButton, undoButton, time.getTimerLabel(), winLabel, loseLabel, OK);
-         winLabel.setVisible(false); loseLabel.setVisible(false); OK.setVisible(false);
+         winLabel.setVisible(false); loseLabel.setVisible(false); OK.setVisible(false); 
+         OK.setMinSize(100,50);
          OK.setOnAction(Enter -> {
            OK.setFocusTraversable(false);
            OK.setVisible(false);
            initSplashScreen();
            save();
             });
-         backButton.setFocusTraversable(false);                      
-         time.start();
+         OK.setOnKeyPressed(emp -> {
+             if(emp.getCode().equals(ENTER))
+             { OK.setFocusTraversable(false);
+           OK.setVisible(false);
+           initSplashScreen();
+           save();              //save data 
+             }});
+         backButton.setFocusTraversable(false);    
+         backButton.setMinSize(50,50);
+         time.start();        //start timer when game level selected
          
          backButton.setOnAction(e ->   
           {  
@@ -415,6 +429,7 @@ public void respondToSelectLevelRequest(String level) {    //check
         initSplashScreen();
          });
           undoButton.setFocusTraversable(false);
+          undoButton.setMinSize(50,50);
          undoButton.setOnAction(e -> {
                 // TODO Auto-generated method stub
               //  eventHandler.UNDO(something)   //check
@@ -474,9 +489,12 @@ public void respondToSelectLevelRequest(String level) {    //check
             if(level.equals("Level 7"))
             {level7loses++; }
                 gridRenderer.setFocusTraversable(false);   //make gridRenderer unkeyable
+                gridRenderer.setDisable(true);
                 if(winLabel.isVisible() == false) loseLabel.setVisible(true);
               OK.setVisible(true); OK.setFocusTraversable(true);
-             OK.focusedProperty(); OK.isFocused(); return;}
+             OK.focusedProperty(); OK.isFocused(); 
+             try{ loseSound();}catch(Exception echo){System.out.println("loseSound error");}
+             return;}
             //We make a new array that copies over the grid[][] at this moment 
             // saving grid just copies address
               int[][] newArray = new int[grid.length][grid[0].length];
@@ -490,13 +508,14 @@ public void respondToSelectLevelRequest(String level) {    //check
                 {grid = moveStack.get(moveStack.size()-1);    //updates grid from top of stack
                 moveStack.remove(moveStack.size()-1);
                 gridRenderer.repaint();}  return;    
-                  default: moveStack.add(newArray);  //save original level grid
+                  default: ;
               }
                 sokoI = gridRenderer.getSokoI();    //check sokobon placement
                 sokoJ = gridRenderer.getSokoJ();
                 switch (e.getCode()) { 
                 
-                case DOWN: if(grid[sokoI][sokoJ+1] == 0)     //check if panel below is empty
+                case DOWN: moveStack.add(newArray);  //save original level grid 
+                    if(grid[sokoI][sokoJ+1] == 0)     //check if panel below is empty
                 {   grid[sokoI][sokoJ+1] = 4;   //move sokoban by 1 row if panel below is empty
                    if(grid[sokoI][sokoJ] == 6)
                    {    grid[sokoI][sokoJ] = 3;
@@ -505,13 +524,14 @@ public void respondToSelectLevelRequest(String level) {    //check
                     grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from                   
                     SokoJ+=1; gridRenderer.repaint();               //incre soko placement
                     break;}
-        if(grid[sokoI][sokoJ+1] == 1) {blocked = true; break;}  //exit if wall        
-      if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
-      {if(grid[sokoI][sokoJ+2] == 1) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall
-      {  if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+        if(grid[sokoI][sokoJ+1] == 1) {blocked = true; break;}  //exit if wall
+      
+        if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
+      {if(grid[sokoI][sokoJ+2] == 1 || grid[sokoI][sokoJ+2] == 5 || grid[sokoI][sokoJ+2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place
       {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
            placesNeeded--;}
-        else  grid[sokoI][sokoJ+2] = (grid[sokoI][sokoJ+1]);       //move box  
+        else  grid[sokoI][sokoJ+2] = 2;       //move box  
         grid[sokoI][sokoJ+1] = 4;       //then move sokoban
         if(grid[sokoI][sokoJ] == 6)
         {   grid[sokoI][sokoJ] = 3;
@@ -519,26 +539,32 @@ public void respondToSelectLevelRequest(String level) {    //check
         else
       grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
         SokoJ+=1;  gridRenderer.repaint(); 
-             break;  }} //incre sokoban place
+             break;  } //incre sokoban place
+        
+         if(grid[sokoI][sokoJ+1] == 5)   //if box with place
+      {if(grid[sokoI][sokoJ+2] == 1 || grid[sokoI][sokoJ+2] == 5 || grid[sokoI][sokoJ+2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ+2] = 2;       //move box  
+        grid[sokoI][sokoJ+1] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+         
  if(grid[sokoI][sokoJ+1] == 3){     //ifplace
       grid[sokoI][sokoJ+1] = 6;   //move by row
       if(grid[sokoI][sokoJ] == 6)
           grid[sokoI][sokoJ] = 3;
+      else
+          grid[sokoI][sokoJ] = 0;
         SokoJ+=1; gridRenderer.repaint();  break; }   
-                 
-         if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
-      {if(grid[sokoI][sokoJ+2] == 1) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall
-        if(grid[sokoI][sokoJ+2] == 3)    //if is a place under box
-      {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
-           placesNeeded--;}
-        else  grid[sokoI][sokoJ+2] = (grid[sokoI][sokoJ+1]);       //move box  
-        grid[sokoI][sokoJ+1] = 4;       //then move sokoban
-        if(grid[sokoI][sokoJ] == 6)
-                       grid[sokoI][sokoJ] = 3;
-                   else
-      grid[sokoI][sokoJ] = 0; SokoJ+=1;  gridRenderer.repaint(); break; //empty out the space where sokoban was
-      }
- case UP: if(grid[sokoI][sokoJ-1] == 0)     //check if panel above is empty
+      
+ case UP: moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI][sokoJ-1] == 0)     //check if panel above is empty
     {  grid[sokoI][sokoJ-1] = 4;   //move sokoban up by 1 row if panel above is empty
     if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
@@ -547,18 +573,34 @@ public void respondToSelectLevelRequest(String level) {    //check
       SokoJ-=1;  gridRenderer.repaint(); 
             break;}
       if(grid[sokoI][sokoJ-1] == 1) {blocked = true; break;}  //exit if wall
+      
       if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
-      {if(grid[sokoI][sokoJ-2] == 1) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
+      {if(grid[sokoI][sokoJ-2] == 1 || grid[sokoI][sokoJ-2] == 5 || grid[sokoI][sokoJ-2] == 2) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
        if(grid[sokoI][sokoJ-2] == 3)    //if is a place
       {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
            placesNeeded--;}
-        else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
+        else  grid[sokoI][sokoJ-2] = (2);       //move box
         grid[sokoI][sokoJ-1] = 4;       //then move sokoban
         if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
                    else
       grid[sokoI][sokoJ] = 0; 
         SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+      
+               if(grid[sokoI][sokoJ-1] == 5)   //if box with place
+      {if(grid[sokoI][sokoJ-2] == 1 || grid[sokoI][sokoJ-2] == 5 || grid[sokoI][sokoJ-2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ-2] = 2;       //move box  
+        grid[sokoI][sokoJ-1] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ-=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+               
  if(grid[sokoI][sokoJ-1] == 3){     //if place
       grid[sokoI][sokoJ-1] = 6;   //move by row
       if(grid[sokoI][sokoJ] == 6)
@@ -567,34 +609,9 @@ public void respondToSelectLevelRequest(String level) {    //check
       grid[sokoI][sokoJ] = 0;
         SokoJ-=1;  gridRenderer.repaint(); break;
            }
-  if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
-      {if(grid[sokoI][sokoJ-2] == 1) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
-       if(grid[sokoI][sokoJ-2] == 3)    //if is a place
-      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
-           placesNeeded--;}
-        else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
-        grid[sokoI][sokoJ-1] = 6;       //then move sokoban
-        if(grid[sokoI][sokoJ] == 6)
-                       grid[sokoI][sokoJ] = 3;
-                   else
-      grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
- //redo for others  //come add time thread timeline
-   if(grid[sokoI][sokoJ-1] == 5)    //if box with place in panel above
-      { if(grid[sokoI][sokoJ-2] == 0)   //the panel above box is empty
-      {  grid[sokoI][sokoJ] = 2;
-        // grid[soko] //come
-      }
-          if(grid[sokoI][sokoJ-2] == 3)    //if is a place
-      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
-           placesNeeded--;}
-        else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
-        grid[sokoI][sokoJ-1] = 6;       //then move sokoban
-        if(grid[sokoI][sokoJ] == 6)
-                       grid[sokoI][sokoJ] = 3;
-                   else
-      grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
  
- case LEFT: if(grid[sokoI-1][sokoJ] == 0)     //check if left panel  is empty
+ case LEFT:  moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI-1][sokoJ] == 0)     //check if left panel  is empty
     {  grid[sokoI-1][sokoJ] = 4;   //move sokoban left by 1  if left panel is empty
     if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
@@ -604,16 +621,31 @@ public void respondToSelectLevelRequest(String level) {    //check
        break;}
        if(grid[sokoI-1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
       if(grid[sokoI-1][sokoJ] == 2)    //if box in left panel 
-      {if(grid[sokoI-2][sokoJ] == 1) {blocked = true; break;}    //continue if there box in left panel and the left panel box is not a wall
+      {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in left panel and the left panel box is not a wall
       { if(grid[sokoI-2][sokoJ] == 3)    //if is a place
       {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
-        grid[sokoI-1][sokoJ] = (grid[sokoI][sokoJ]);       //then move sokoban
+        grid[sokoI-1][sokoJ] = 4;       //then move sokoban
         if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
                    else
       grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+      
+               if(grid[sokoI-1][sokoJ] == 5)   //if box with place
+      {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI-2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI-2][sokoJ] = 2;       //move box  
+        grid[sokoI-1][sokoJ] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoI-=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+               
  if(grid[sokoI-1][sokoJ] == 3){     //if place
       grid[sokoI-1][sokoJ] = 6;   //move left
       if(grid[sokoI][sokoJ] == 6)
@@ -622,8 +654,8 @@ public void respondToSelectLevelRequest(String level) {    //check
       grid[sokoI][sokoJ] = 0;
         SokoI-=1; gridRenderer.repaint(); break;
            }
-    if(grid[sokoI-1][sokoJ] == 5)    //if box in left panel 
-      {if(grid[sokoI-2][sokoJ] == 1) {blocked = true; break;}   //continue if there box in left panel and the left panel box is not a wall
+  /*  if(grid[sokoI-1][sokoJ] == 5)    //if box in left panel 
+  {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in left panel and the left panel box is not a wall
        if(grid[sokoI-2][sokoJ] == 3)    //if is a place
       {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
@@ -633,8 +665,9 @@ public void respondToSelectLevelRequest(String level) {    //check
                        grid[sokoI][sokoJ] = 3;
                    else
       grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
- 
- case RIGHT: if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
+ */
+ case RIGHT: moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
     {  grid[sokoI+1][sokoJ] = 4;   //move sokoban right by 1  if rigbht panel is empty
     if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
@@ -644,12 +677,12 @@ public void respondToSelectLevelRequest(String level) {    //check
        break;}
         if(grid[sokoI+1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
       if(grid[sokoI+1][sokoJ] == 2)    //if box in right panel 
-      {if(grid[sokoI+2][sokoJ] == 1) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
+{if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
        if(grid[sokoI+2][sokoJ] == 3)    //if is a place
       {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
-        else  grid[sokoI+2][sokoJ] = (grid[sokoI+1][sokoJ]);       //move box
-        grid[sokoI+1][sokoJ] = (grid[sokoI][sokoJ]);       //then move sokoban
+        else  grid[sokoI+2][sokoJ] = (2);       //move box
+        grid[sokoI+1][sokoJ] = 4;       //then move sokoban
          SokoI+=1; 
          if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
@@ -663,8 +696,8 @@ public void respondToSelectLevelRequest(String level) {    //check
       grid[sokoI][sokoJ] = 0;
           SokoI+=1; gridRenderer.repaint();  break;
            }
- if(grid[sokoI+1][sokoJ] == 5)    //if box with place in right panel 
-      {if(grid[sokoI+2][sokoJ] == 1) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
+ /* if(grid[sokoI+1][sokoJ] == 5)    //if box with place in right panel 
+  {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
        if(grid[sokoI+2][sokoJ] == 3)    //if is a place
       {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
@@ -675,12 +708,27 @@ public void respondToSelectLevelRequest(String level) {    //check
                        grid[sokoI][sokoJ] = 3;
                    else
          grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+ */
+                 if(grid[sokoI+1][sokoJ] == 5)   //if box with place
+      {if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI+2][sokoJ] = 2;       //move box  
+        grid[sokoI+1][sokoJ] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoI+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
           
  } 
             if(blocked == true)
             { try{blockedSound(); blocked = false;}
             catch(Exception eoi){System.out.println("blocked no exist");}}
-            else if(placesNeeded == 0)
+            
+            else if(placesNeeded == 0)  //if won
             {            { if(level.equals("Level 1"))
             {level1wins++;  level1FastestWin = time.getCount() + ""; }
             if(level.equals("Level 2"))
@@ -697,10 +745,11 @@ public void respondToSelectLevelRequest(String level) {    //check
             {level7wins++;  level7FastestWin = time.getCount() + ""; }
                 winLabel.setVisible(true); OK.setVisible(true);
              gridRenderer.setFocusTraversable(false);
+             gridRenderer.setDisable(true);
            OK.setFocusTraversable(true);
            OK.focusTraversableProperty();
            OK.focusedProperty();}
-            }
+             try{ winSound();}catch(Exception echo){System.out.println("winSound error");}}
             else if(numBoxesBlocked == numBoxes && placesNeeded != 0)
             {        if(level.equals("Level 1"))
             {level1loses++; }
@@ -718,20 +767,17 @@ public void respondToSelectLevelRequest(String level) {    //check
             {level7loses++; }
                 loseLabel.setVisible(true); OK.setVisible(true);
              gridRenderer.setFocusTraversable(false);
+             gridRenderer.setDisable(true);
            OK.setFocusTraversable(true);
            OK.focusTraversableProperty();
-           OK.focusedProperty();}
+           OK.focusedProperty();
+            try{ loseSound();}catch(Exception echo){System.out.println("loseSound error");}}
             else
             {      try{ moveSound();}
             catch(Exception ex){}
          }
            
-            OK.setOnAction(Enter -> {
-           OK.setFocusTraversable(false);
-           OK.setVisible(false);
-           initSplashScreen();
-           save();
-            });
+           
           
         });
 }
@@ -743,13 +789,13 @@ public void save(){
           if(level5loses == 0) level5percent = 100; else level5percent = level5wins / (level5wins + level5loses) * 100; 
            if(level6loses == 0) level6percent = 100; else level6percent = level6wins / (level6wins + level6loses) * 100; 
             if(level7loses == 0) level7percent = 100; else level7percent = level7wins / (level7wins + level7loses) * 100; 
-    String winText = "Level 1 Number of wins: " + level1wins + "   Number of loses: " + level1loses + "   Winning percentage: " + level1percent + "%   Fastest win: " + level1FastestWin + "\n" +
-                     "Level 2 Number of wins: " + level2wins + "   Number of loses: " + level2loses + "   Winning percentage: " + level2percent + "%   Fastest win: " + level2FastestWin + "\n" +
-                       "Level 3 Number of wins: " + level3wins + "   Number of loses: " + level3loses + "   Winning percentage: " + level3percent + "%   Fastest win: " + level3FastestWin + "\n" +
-                       "Level 4 Number of wins: " + level4wins + "   Number of loses: " + level4loses + "   Winning percentage: " + level4percent + "%   Fastest win: " + level4FastestWin + "\n" +
-                       "Level 5 Number of wins: " + level5wins + "   Number of loses: " + level5loses + "   Winning percentage: " + level5percent + "%   Fastest win: " + level5FastestWin + "\n" +
-                       "Level 6 Number of wins: " + level6wins + "   Number of loses: " + level6loses + "   Winning percentage: " + level6percent + "%   Fastest win: " + level6FastestWin + "\n" +
-                       "Level 7 Number of wins: " + level7wins + "   Number of loses: " + level7loses + "   Winning percentage: " + level7percent + "%   Fastest win: " + level7FastestWin + "\n";
+    String winText = "Level 1 Number of wins: " + level1wins + "   Number of loses: " + level1loses + "   Winning percentage: " + level1percent + "%   Fastest win: " + level1FastestWin + " seconds" + "\n" +
+                     "Level 2 Number of wins: " + level2wins + "   Number of loses: " + level2loses + "   Winning percentage: " + level2percent + "%   Fastest win: " + level2FastestWin + " seconds" + "\n" +
+                       "Level 3 Number of wins: " + level3wins + "   Number of loses: " + level3loses + "   Winning percentage: " + level3percent + "%   Fastest win: " + level3FastestWin + " seconds" + "\n" +
+                       "Level 4 Number of wins: " + level4wins + "   Number of loses: " + level4loses + "   Winning percentage: " + level4percent + "%   Fastest win: " + level4FastestWin + " seconds" + "\n" +
+                       "Level 5 Number of wins: " + level5wins + "   Number of loses: " + level5loses + "   Winning percentage: " + level5percent + "%   Fastest win: " + level5FastestWin + " seconds" + "\n" +
+                       "Level 6 Number of wins: " + level6wins + "   Number of loses: " + level6loses + "   Winning percentage: " + level6percent + "%   Fastest win: " + level6FastestWin + " seconds" + "\n" +
+                       "Level 7 Number of wins: " + level7wins + "   Number of loses: " + level7loses + "   Winning percentage: " + level7percent + "%   Fastest win: " + level7FastestWin + " seconds" + "\n";
     Text winTexter = TextBuilder.create()
                 .text(winText)
                 .build();                
@@ -867,7 +913,24 @@ class GridRenderer extends Canvas {
                             numBoxes++;
                             //if box is cornered
                             if((grid[i+1][j] == 1 && grid[i][j+1] == 1) || (grid[i+1][j] == 1 && grid[i][j-1] == 1)
-                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 1) || (grid[i-1][j] == 1 && grid[i][j-1] == 1))
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 1) || (grid[i-1][j] == 1 && grid[i][j-1] == 1)
+                                    || (grid[i+1][j] == 1 && grid[i][j+1] == 2) || (grid[i+1][j] == 1 && grid[i][j-1] == 2)
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 2) || (grid[i-1][j] == 1 && grid[i][j-1] == 2)
+                                    || (grid[i+1][j] == 2 && grid[i][j+1] == 1) || (grid[i+1][j] == 2 && grid[i][j-1] == 1)
+                                    || (grid[i-1][j] == 2 && grid[i][j+1] == 1) || (grid[i-1][j] == 2 && grid[i][j-1] == 1)
+                                    || (grid[i+1][j] == 2 && grid[i][j+1] == 2) || (grid[i+1][j] == 2 && grid[i][j-1] == 2)
+                                    || (grid[i-1][j] == 2 && grid[i][j+1] == 2) || (grid[i-1][j] == 2 && grid[i][j-1] == 2)
+                                    || (grid[i+1][j] == 1 && grid[i][j+1] == 5) || (grid[i+1][j] == 1 && grid[i][j-1] == 5)
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 5) || (grid[i-1][j] == 1 && grid[i][j-1] == 5)
+                                    || (grid[i+1][j] == 5 && grid[i][j+1] == 1) || (grid[i+1][j] == 5 && grid[i][j-1] == 1)
+                                    || (grid[i-1][j] == 5 && grid[i][j+1] == 1) || (grid[i-1][j] == 5 && grid[i][j-1] == 1)
+                                    || (grid[i+1][j] == 2 && grid[i][j+1] == 5) || (grid[i+1][j] == 2 && grid[i][j-1] == 5)
+                                    || (grid[i-1][j] == 2 && grid[i][j+1] == 5) || (grid[i-1][j] == 2 && grid[i][j-1] == 5)
+                                    || (grid[i+1][j] == 5 && grid[i][j+1] == 2) || (grid[i+1][j] == 5 && grid[i][j-1] == 2)
+                                    || (grid[i-1][j] == 5 && grid[i][j+1] == 2) || (grid[i-1][j] == 5 && grid[i][j-1] == 2)
+                                    || (grid[i+1][j] == 5 && grid[i][j+1] == 5) || (grid[i+1][j] == 5 && grid[i][j-1] == 5)
+                                    || (grid[i-1][j] == 5 && grid[i][j+1] == 5) || (grid[i-1][j] == 5 && grid[i][j-1] == 5)
+                                    )
                               numBoxesBlocked++;
                                 break;
                         case 3:
@@ -882,19 +945,37 @@ class GridRenderer extends Canvas {
                         case 5:
                             gc.drawImage(boxImage, x, y, w, h);    //box over place
                             numBoxes++;
-                             //if box is cornered
+                            //if box is cornered
                             if((grid[i+1][j] == 1 && grid[i][j+1] == 1) || (grid[i+1][j] == 1 && grid[i][j-1] == 1)
-                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 1) || (grid[i-1][j] == 1 && grid[i][j-1] == 1))
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 1) || (grid[i-1][j] == 1 && grid[i][j-1] == 1)
+                                    || (grid[i+1][j] == 1 && grid[i][j+1] == 2) || (grid[i+1][j] == 1 && grid[i][j-1] == 2)
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 2) || (grid[i-1][j] == 1 && grid[i][j-1] == 2)
+                                    || (grid[i+1][j] == 2 && grid[i][j+1] == 1) || (grid[i+1][j] == 2 && grid[i][j-1] == 1)
+                                    || (grid[i-1][j] == 2 && grid[i][j+1] == 1) || (grid[i-1][j] == 2 && grid[i][j-1] == 1)
+                                    || (grid[i+1][j] == 2 && grid[i][j+1] == 2) || (grid[i+1][j] == 2 && grid[i][j-1] == 2)
+                                    || (grid[i-1][j] == 2 && grid[i][j+1] == 2) || (grid[i-1][j] == 2 && grid[i][j-1] == 2)
+                                    || (grid[i+1][j] == 1 && grid[i][j+1] == 5) || (grid[i+1][j] == 1 && grid[i][j-1] == 5)
+                                    || (grid[i-1][j] == 1 && grid[i][j+1] == 5) || (grid[i-1][j] == 1 && grid[i][j-1] == 5)
+                                    || (grid[i+1][j] == 5 && grid[i][j+1] == 1) || (grid[i+1][j] == 5 && grid[i][j-1] == 1)
+                                    || (grid[i-1][j] == 5 && grid[i][j+1] == 1) || (grid[i-1][j] == 5 && grid[i][j-1] == 1)
+                                    || (grid[i+1][j] == 2 && grid[i][j+1] == 5) || (grid[i+1][j] == 2 && grid[i][j-1] == 5)
+                                    || (grid[i-1][j] == 2 && grid[i][j+1] == 5) || (grid[i-1][j] == 2 && grid[i][j-1] == 5)
+                                    || (grid[i+1][j] == 5 && grid[i][j+1] == 2) || (grid[i+1][j] == 5 && grid[i][j-1] == 2)
+                                    || (grid[i-1][j] == 5 && grid[i][j+1] == 2) || (grid[i-1][j] == 5 && grid[i][j-1] == 2)
+                                    || (grid[i+1][j] == 5 && grid[i][j+1] == 5) || (grid[i+1][j] == 5 && grid[i][j-1] == 5)
+                                    || (grid[i-1][j] == 5 && grid[i][j+1] == 5) || (grid[i-1][j] == 5 && grid[i][j-1] == 5)
+                                    )
                               numBoxesBlocked++;
                             break;
                         case 6:
                             gc.drawImage(sokobanImage, x, y, w, h);   //sokoban over place
+                            placesNeeded++;
                             SokoI = i;   //save coordinates
                             SokoJ = j;
                             break;
                     }
 
-                    // THEN RENDER THE TEXT
+               /*     // THEN RENDER THE TEXT
                     String numToDraw = "" + grid[i][j];
                     double xInc = (w / 2) - (10 / 2);
                     double yInc = (h / 2) + (10 / 4);
@@ -904,7 +985,7 @@ class GridRenderer extends Canvas {
                     gc.fillText(numToDraw, x, y);
                     x -= xInc;
                     y -= yInc;
-                    
+                */    
                     // ON TO THE NEXT ROW
                     y += h;
                 }
