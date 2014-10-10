@@ -11,10 +11,14 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.embed.swing.SwingNode;
 import properties_manager.PropertiesManager;
 import javafx.event.ActionEvent;
@@ -26,14 +30,19 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import static javafx.scene.input.KeyCode.DOWN;
+import static javafx.scene.input.KeyCode.LEFT;
+import static javafx.scene.input.KeyCode.RIGHT;
+import static javafx.scene.input.KeyCode.U;
+import static javafx.scene.input.KeyCode.UP;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -41,10 +50,12 @@ import javax.swing.JScrollPane;
        import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextBuilder;
 import sokoban.file.SokobanFileLoader;
 
 public class SokobanUI extends Pane {
-     
+    
     /**
      * The SokobanUIState represents the four screen states that are possible
      * for the Sokoban game application. Depending on which state is in current
@@ -91,19 +102,27 @@ public class SokobanUI extends Pane {
   SwingNode statsSwingNode = new SwingNode();
   ArrayList<int[][]> moveStack;
   GridRenderer gridRenderer;
-    private File file = new File("move.wav");
-    private final String MEDIA_URL = file.toURI().toString();
+  MediaPlayer mediaPlayer;
+  MediaPlayer mediaPlayerSplash;
+    private File file = new File("move.wav");         //creating file for sound
+    private final String MEDIA_URL = file.toURI().toString();     //turning it into a string url
     private File filer = new File("Counting+Stars+Background+Audio.wav");
     private final String splashSounds = filer.toURI().toString();
     private File fileWin = new File("win.wav");
     private final String wonMe = fileWin.toURI().toString();
     private File fileLose = new File("lose.wav");
     private final String loseMe = fileLose.toURI().toString();
-    private static final Integer STARTTIME = 15;
+    private File fileBlocked = new File("blocked.wav");
+    private final String blockedSounds = fileBlocked.toURI().toString();
     private Timeline timeline;
-    private Label timerLabel = new Label();
-    private Integer timeSeconds = STARTTIME;
-    Group root = new Group();
+    private Timer time;
+    private double level1wins; private double level1loses; private double level1percent; private String level1FastestWin = "-";
+    private double level2wins; private double level2loses; private double level2percent; private String level2FastestWin = "-";
+    private double level3wins; private double level3loses; private double level3percent; private String level3FastestWin = "-";
+    private double level4wins; private double level4loses; private double level4percent; private String level4FastestWin = "-";
+    private double level5wins; private double level5loses; private double level5percent; private String level5FastestWin = "-";
+    private double level6wins; private double level6loses; private double level6percent; private String level6FastestWin = "-";
+    private double level7wins; private double level7loses; private double level7percent; private String level7FastestWin = "-";
     
     
     
@@ -163,7 +182,10 @@ public class SokobanUI extends Pane {
         docManager = new SokobanDocumentManager(this);
         initMainPane();
         initNorthToolbar();//check
+         Media media = new Media(splashSounds);
+mediaPlayerSplash = new MediaPlayer(media);
         initSplashScreen();
+        
       //  Media media = new Media("sample.mp4"); 
  //MediaPlayer mediaPlayer = new MediaPlayer(media); 
  //MediaView mediaView = new MediaView(mediaPlayer); 
@@ -205,40 +227,13 @@ public class SokobanUI extends Pane {
                 .getProperty(SokobanPropertyType.WINDOW_HEIGHT));
         mainPane.resize(paneWidth, paneHeigth);
         mainPane.setPadding(marginlessInsets);
-    }
- /* public void TimeMe()
-   {  timerLabel.setText(timeSeconds.toString());
-        timerLabel.setTextFill(Color.RED);
-        timerLabel.setStyle("-fx-font-size: 4em;");
-          if (timeline != null) 
-            timeline.stop();
-          timeSeconds = STARTTIME;
-           timerLabel.setText(timeSeconds.toString());
-        timeline = new Timeline();
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.getKeyFrames().add(
-                new KeyFrame(Duration.seconds(1),
-                  new EventHandler() {
-                    // KeyFrame event handler
-                    public void handle(ActionEvent event) {
-                        timeSeconds--;
-                        // update timerLabel
-                        timerLabel.setText(
-                              timeSeconds.toString());
-                        if (timeSeconds <= 0) {
-                            timeline.stop();
-                        }
-                      }
-                }));
-        timeline.playFromStart();
-    }
-   */
+    } 
+   
     public void initSplashScreen() {
         try {
-            splashSound(); System.out.println("good");
+            splashSound();
         } catch (Exception ex) {
             Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
-            System.out.println("nope");
         }
         // INIT THE SPLASH SCREEN CONTROLS
         PropertiesManager props = PropertiesManager.getPropertiesManager();
@@ -276,14 +271,15 @@ public class SokobanUI extends Pane {
         for (int i = 0; i < levels.size(); i++) {
 
             // GET THE LIST OF LEVEL OPTIONS
-            String level = levels.get(i);
+            String leveler = levels.get(i);
             String levelImageName = levelImages.get(i);
             Image levelImage = loadImage(levelImageName);
             ImageView levelImageView = new ImageView(levelImage);
               levelImageView.setFitHeight(200);  //check
-              levelImageView.setFitWidth(85);
+              levelImageView.setFitWidth(50);
             // AND BUILD THE BUTTON
             Button levelButton = new Button();
+            levelButton.setText(leveler);
             levelButton.setGraphic(levelImageView);
             // CONNECT THE BUTTON TO THE EVENT HANDLER
             levelButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -293,10 +289,17 @@ public class SokobanUI extends Pane {
                     // TODO
                    
                     changeWorkspace(SokobanUIState.PLAY_GAME_STATE);   //check
-                  respondToSelectLevelRequest(level);  //check
+                  respondToSelectLevelRequest(levelButton.getText());  //check
                    
                 }
             });
+             levelButton.setOnKeyPressed(e -> {
+                  switch (e.getCode()) {
+                      case ENTER:     
+                    changeWorkspace(SokobanUIState.PLAY_GAME_STATE);   //check
+                  respondToSelectLevelRequest(levelButton.getText());  //check
+                  }
+             });
             // TODO
             levelSelectionPane.getChildren().add(levelButton);   //check
            
@@ -310,37 +313,40 @@ public class SokobanUI extends Pane {
     
     public void moveSound() throws Exception 
     {  Media media = new Media(MEDIA_URL);
-MediaPlayer mediaPlayer = new MediaPlayer(media);
+mediaPlayer = new MediaPlayer(media);
 mediaPlayer.play();
     MediaView mediaView = new MediaView(mediaPlayer);
     mainPane.setTop(mediaView);}
     public void splashSound() throws Exception 
     {  Media media = new Media(splashSounds);
-MediaPlayer mediaPlayer = new MediaPlayer(media);
-mediaPlayer.play();
+    mediaPlayerSplash.stop();
+mediaPlayerSplash = new MediaPlayer(media);
+mediaPlayerSplash.play();   mediaPlayerSplash.setCycleCount(500); mediaPlayerSplash.setAutoPlay(true); 
     MediaView mediaView = new MediaView(mediaPlayer);
     mainPane.setTop(mediaView);}
     public void winSound() throws Exception 
     {  Media media = new Media(wonMe);
-MediaPlayer mediaPlayer = new MediaPlayer(media);
+mediaPlayer = new MediaPlayer(media);
 mediaPlayer.play();
     MediaView mediaView = new MediaView(mediaPlayer);
     mainPane.setTop(mediaView);}
     public void loseSound() throws Exception 
     {  Media media = new Media(loseMe);
-MediaPlayer mediaPlayer = new MediaPlayer(media);
+    mediaPlayer.stop();
+mediaPlayer = new MediaPlayer(media);
+mediaPlayer.play();
+    MediaView mediaView = new MediaView(mediaPlayer);
+    mainPane.setTop(mediaView);}
+       public void blockedSound() throws Exception 
+    {  Media media = new Media(blockedSounds);
+mediaPlayer = new MediaPlayer(media);
 mediaPlayer.play();
     MediaView mediaView = new MediaView(mediaPlayer);
     mainPane.setTop(mediaView);}
   
 public void respondToSelectLevelRequest(String level) {    //check
-      FileChooser fileChooser = new FileChooser();
-//private final String SOKOBAN_DATA_DIR = "../Sokoban_draft/data/"; //check if need this to auto find?
-        fileChooser.setTitle("Open Resource File");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Sokoban Files", "*.sok"));
-     File fileToOpen = fileChooser.showOpenDialog(primaryStage);  
-            String fileName = fileToOpen.getPath();
+     File fileToOpen = new File("data/" + level + ".sok");
+            String fileName = fileToOpen.toURI().toString(); System.out.println(fileName);
             try {
                 if (fileToOpen != null) {
                     // LET'S USE A FAST LOADING TECHNIQUE. WE'LL LOAD ALL OF THE
@@ -386,13 +392,23 @@ public void respondToSelectLevelRequest(String level) {    //check
          gridRenderer.setWidth(500);
          gridRenderer.setHeight(500);
          gamePanel.getChildren().clear();
+         gameButton.setVisible(true);      
          gamePanel.setTop(northToolbar);
          gamePanel.setLeft(TheBox);
          gamePanel.setCenter(gridRenderer);
          TheBox.getChildren().clear();
-         TheBox.getChildren().addAll(backButton, undoButton, winLabel, loseLabel, OK);
+         time = new Timer();
+         TheBox.getChildren().addAll(backButton, undoButton, time.getTimerLabel(), winLabel, loseLabel, OK);
          winLabel.setVisible(false); loseLabel.setVisible(false); OK.setVisible(false);
-         backButton.setFocusTraversable(false);
+         OK.setOnAction(Enter -> {
+           OK.setFocusTraversable(false);
+           OK.setVisible(false);
+           initSplashScreen();
+           save();
+            });
+         backButton.setFocusTraversable(false);                      
+         time.start();
+         
          backButton.setOnAction(e ->   
           {  
   
@@ -408,6 +424,8 @@ public void respondToSelectLevelRequest(String level) {    //check
                 moveStack.remove(moveStack.size()-1);
                 gridRenderer.repaint();}
         });
+         
+
     
          gridRenderer.repaint();
          
@@ -438,18 +456,46 @@ public void respondToSelectLevelRequest(String level) {    //check
              gridRenderer.isFocused();
              gridRenderer.minWidth(mainPane.getWidth());
       
-         gridRenderer.setOnKeyPressed(e -> { 
-            try{ moveSound();}
-            catch(Exception ex){}
+         gridRenderer.setOnKeyPressed(e -> {
+            boolean blocked = false;  //track if sokoban was blocked
+            if(time.getCount() == 0)       //check time renderer
+            { if(level.equals("Level 1"))
+            {level1loses++; }
+            if(level.equals("Level 2"))
+            {level2loses++; }
+            if(level.equals("Level 3"))
+            {level3loses++; }
+            if(level.equals("Level 4"))
+            {level4loses++; }
+            if(level.equals("Level 5"))
+            {level5loses++; }
+            if(level.equals("Level 6"))
+            {level6loses++; }
+            if(level.equals("Level 7"))
+            {level7loses++; }
+                gridRenderer.setFocusTraversable(false);   //make gridRenderer unkeyable
+                if(winLabel.isVisible() == false) loseLabel.setVisible(true);
+              OK.setVisible(true); OK.setFocusTraversable(true);
+             OK.focusedProperty(); OK.isFocused(); return;}
+            //We make a new array that copies over the grid[][] at this moment 
+            // saving grid just copies address
               int[][] newArray = new int[grid.length][grid[0].length];
               for(int o = 0; o < grid.length; o++)   //grid.length = columns   grid[0].length = rows
               { for(int p = 0; p < grid[0].length; p++)
               { newArray[o][p] = grid[o][p];
               }}       
-               moveStack.add(newArray);  //save original level grid 
+              switch (e.getCode()) {
+                  case U:   System.out.println("moveStack is size " + moveStack.size());    //add shortcut for undo when U is pressed
+                if(moveStack.size() > 0)
+                {grid = moveStack.get(moveStack.size()-1);    //updates grid from top of stack
+                moveStack.remove(moveStack.size()-1);
+                gridRenderer.repaint();}  return;    
+                  default: moveStack.add(newArray);  //save original level grid
+              }
                 sokoI = gridRenderer.getSokoI();    //check sokobon placement
                 sokoJ = gridRenderer.getSokoJ();
                 switch (e.getCode()) { 
+                
                 case DOWN: if(grid[sokoI][sokoJ+1] == 0)     //check if panel below is empty
                 {   grid[sokoI][sokoJ+1] = 4;   //move sokoban by 1 row if panel below is empty
                    if(grid[sokoI][sokoJ] == 6)
@@ -459,9 +505,9 @@ public void respondToSelectLevelRequest(String level) {    //check
                     grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from                   
                     SokoJ+=1; gridRenderer.repaint();               //incre soko placement
                     break;}
-        if(grid[sokoI][sokoJ+1] == 1) break;  //exit if wall        
+        if(grid[sokoI][sokoJ+1] == 1) {blocked = true; break;}  //exit if wall        
       if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
-      {if(grid[sokoI][sokoJ+2] == 1) {break;}   //continue if there box in panel below and the panel below box is not a wall
+      {if(grid[sokoI][sokoJ+2] == 1) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall
       {  if(grid[sokoI][sokoJ+2] == 3)    //if is a place
       {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
            placesNeeded--;}
@@ -481,7 +527,7 @@ public void respondToSelectLevelRequest(String level) {    //check
         SokoJ+=1; gridRenderer.repaint();  break; }   
                  
          if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
-      {if(grid[sokoI][sokoJ+2] == 1) {break;}   //continue if there box in panel below and the panel below box is not a wall
+      {if(grid[sokoI][sokoJ+2] == 1) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall
         if(grid[sokoI][sokoJ+2] == 3)    //if is a place under box
       {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
            placesNeeded--;}
@@ -500,9 +546,9 @@ public void respondToSelectLevelRequest(String level) {    //check
        grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
       SokoJ-=1;  gridRenderer.repaint(); 
             break;}
-      if(grid[sokoI][sokoJ-1] == 1) break;  //exit if wall
+      if(grid[sokoI][sokoJ-1] == 1) {blocked = true; break;}  //exit if wall
       if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
-      {if(grid[sokoI][sokoJ-2] == 1) break;    //break if there box in panel below and the panel above box is not a wall or null
+      {if(grid[sokoI][sokoJ-2] == 1) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
        if(grid[sokoI][sokoJ-2] == 3)    //if is a place
       {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
            placesNeeded--;}
@@ -522,8 +568,8 @@ public void respondToSelectLevelRequest(String level) {    //check
         SokoJ-=1;  gridRenderer.repaint(); break;
            }
   if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
-      {if(grid[sokoI][sokoJ-2] == 1) break;    //break if there box in panel below and the panel above box is not a wall or null
-      { if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {if(grid[sokoI][sokoJ-2] == 1) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
+       if(grid[sokoI][sokoJ-2] == 3)    //if is a place
       {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI][sokoJ-2] = (grid[sokoI][sokoJ-1]);       //move box
@@ -531,7 +577,7 @@ public void respondToSelectLevelRequest(String level) {    //check
         if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
                    else
-      grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+      grid[sokoI][sokoJ] = 0; SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
  //redo for others  //come add time thread timeline
    if(grid[sokoI][sokoJ-1] == 5)    //if box with place in panel above
       { if(grid[sokoI][sokoJ-2] == 0)   //the panel above box is empty
@@ -556,9 +602,9 @@ public void respondToSelectLevelRequest(String level) {    //check
        grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
        SokoI-=1; gridRenderer.repaint();  
        break;}
-       if(grid[sokoI-1][sokoJ] == 1) break;  //exit if wall  
+       if(grid[sokoI-1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
       if(grid[sokoI-1][sokoJ] == 2)    //if box in left panel 
-      {if(grid[sokoI-2][sokoJ] == 1) break;    //continue if there box in left panel and the left panel box is not a wall
+      {if(grid[sokoI-2][sokoJ] == 1) {blocked = true; break;}    //continue if there box in left panel and the left panel box is not a wall
       { if(grid[sokoI-2][sokoJ] == 3)    //if is a place
       {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
@@ -577,8 +623,8 @@ public void respondToSelectLevelRequest(String level) {    //check
         SokoI-=1; gridRenderer.repaint(); break;
            }
     if(grid[sokoI-1][sokoJ] == 5)    //if box in left panel 
-      {if(grid[sokoI-2][sokoJ] == 1) break;    //continue if there box in left panel and the left panel box is not a wall
-      { if(grid[sokoI-2][sokoJ] == 3)    //if is a place
+      {if(grid[sokoI-2][sokoJ] == 1) {blocked = true; break;}   //continue if there box in left panel and the left panel box is not a wall
+       if(grid[sokoI-2][sokoJ] == 3)    //if is a place
       {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
@@ -586,7 +632,7 @@ public void respondToSelectLevelRequest(String level) {    //check
         if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
                    else
-      grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+      grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
  
  case RIGHT: if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
     {  grid[sokoI+1][sokoJ] = 4;   //move sokoban right by 1  if rigbht panel is empty
@@ -596,10 +642,10 @@ public void respondToSelectLevelRequest(String level) {    //check
        grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
        SokoI+=1; gridRenderer.repaint(); 
        break;}
-        if(grid[sokoI+1][sokoJ] == 1) break;  //exit if wall  
+        if(grid[sokoI+1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
       if(grid[sokoI+1][sokoJ] == 2)    //if box in right panel 
-      {if(grid[sokoI+2][sokoJ] == 1) break;    //continue if there box in right panel and the right panel box is not a wall
-      { if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {if(grid[sokoI+2][sokoJ] == 1) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
+       if(grid[sokoI+2][sokoJ] == 3)    //if is a place
       {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI+2][sokoJ] = (grid[sokoI+1][sokoJ]);       //move box
@@ -608,7 +654,7 @@ public void respondToSelectLevelRequest(String level) {    //check
          if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
                    else
-             grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+             grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
  if(grid[sokoI+1][sokoJ] == 3){     //if place
       grid[sokoI+1][sokoJ] = 6;   //move right   
       if(grid[sokoI][sokoJ] == 6)
@@ -618,8 +664,8 @@ public void respondToSelectLevelRequest(String level) {    //check
           SokoI+=1; gridRenderer.repaint();  break;
            }
  if(grid[sokoI+1][sokoJ] == 5)    //if box with place in right panel 
-      {if(grid[sokoI+2][sokoJ] == 1) break;    //continue if there box in right panel and the right panel box is not a wall
-      { if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {if(grid[sokoI+2][sokoJ] == 1) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
+       if(grid[sokoI+2][sokoJ] == 3)    //if is a place
       {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
            placesNeeded--;}
         else  grid[sokoI+2][sokoJ] = (grid[sokoI+1][sokoJ]);       //move box
@@ -628,36 +674,101 @@ public void respondToSelectLevelRequest(String level) {    //check
          if(grid[sokoI][sokoJ] == 6)
                        grid[sokoI][sokoJ] = 3;
                    else
-         grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+         grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+          
  } 
-
-            if(placesNeeded == 0)
-            {winLabel.setVisible(true); OK.setVisible(true);
+            if(blocked == true)
+            { try{blockedSound(); blocked = false;}
+            catch(Exception eoi){System.out.println("blocked no exist");}}
+            else if(placesNeeded == 0)
+            {            { if(level.equals("Level 1"))
+            {level1wins++;  level1FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 2"))
+            {level2wins++;  level2FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 3"))
+            {level3wins++;  level3FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 4"))
+            {level4wins++;  level4FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 5"))
+            {level5wins++;  level5FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 6"))
+            {level6wins++;  level6FastestWin = time.getCount() + "";  }
+            if(level.equals("Level 7"))
+            {level7wins++;  level7FastestWin = time.getCount() + ""; }
+                winLabel.setVisible(true); OK.setVisible(true);
              gridRenderer.setFocusTraversable(false);
            OK.setFocusTraversable(true);
            OK.focusTraversableProperty();
            OK.focusedProperty();}
-            if(numBoxesBlocked == numBoxes)
-            {loseLabel.setVisible(true); OK.setVisible(true);
+            }
+            else if(numBoxesBlocked == numBoxes && placesNeeded != 0)
+            {        if(level.equals("Level 1"))
+            {level1loses++; }
+            if(level.equals("Level 2"))
+            {level2loses++; }
+            if(level.equals("Level 3"))
+            {level3loses++; }
+            if(level.equals("Level 4"))
+            {level4loses++; }
+            if(level.equals("Level 5"))
+            {level5loses++; }
+            if(level.equals("Level 6"))
+            {level6loses++;}
+            if(level.equals("Level 7"))
+            {level7loses++; }
+                loseLabel.setVisible(true); OK.setVisible(true);
              gridRenderer.setFocusTraversable(false);
            OK.setFocusTraversable(true);
            OK.focusTraversableProperty();
            OK.focusedProperty();}
+            else
+            {      try{ moveSound();}
+            catch(Exception ex){}
+         }
            
             OK.setOnAction(Enter -> {
            OK.setFocusTraversable(false);
            OK.setVisible(false);
            initSplashScreen();
+           save();
             });
           
         });
 }
+public void save(){  
+      if(level1loses == 0) level1percent = 100; else level1percent = level1wins / (level1wins + level1loses) * 100; 
+       if(level2loses == 0) level2percent = 100; else level2percent = level2wins / (level2wins + level2loses) * 100; 
+        if(level3loses == 0) level3percent = 100; else level3percent = level3wins / (level3wins + level3loses) * 100; 
+         if(level4loses == 0) level4percent = 100; else level4percent = level4wins / (level4wins + level4loses) * 100; 
+          if(level5loses == 0) level5percent = 100; else level5percent = level5wins / (level5wins + level5loses) * 100; 
+           if(level6loses == 0) level6percent = 100; else level6percent = level6wins / (level6wins + level6loses) * 100; 
+            if(level7loses == 0) level7percent = 100; else level7percent = level7wins / (level7wins + level7loses) * 100; 
+    String winText = "Level 1 Number of wins: " + level1wins + "   Number of loses: " + level1loses + "   Winning percentage: " + level1percent + "%   Fastest win: " + level1FastestWin + "\n" +
+                     "Level 2 Number of wins: " + level2wins + "   Number of loses: " + level2loses + "   Winning percentage: " + level2percent + "%   Fastest win: " + level2FastestWin + "\n" +
+                       "Level 3 Number of wins: " + level3wins + "   Number of loses: " + level3loses + "   Winning percentage: " + level3percent + "%   Fastest win: " + level3FastestWin + "\n" +
+                       "Level 4 Number of wins: " + level4wins + "   Number of loses: " + level4loses + "   Winning percentage: " + level4percent + "%   Fastest win: " + level4FastestWin + "\n" +
+                       "Level 5 Number of wins: " + level5wins + "   Number of loses: " + level5loses + "   Winning percentage: " + level5percent + "%   Fastest win: " + level5FastestWin + "\n" +
+                       "Level 6 Number of wins: " + level6wins + "   Number of loses: " + level6loses + "   Winning percentage: " + level6percent + "%   Fastest win: " + level6FastestWin + "\n" +
+                       "Level 7 Number of wins: " + level7wins + "   Number of loses: " + level7loses + "   Winning percentage: " + level7percent + "%   Fastest win: " + level7FastestWin + "\n";
+    Text winTexter = TextBuilder.create()
+                .text(winText)
+                .build();                
+      try { File fileIt = new File("stats.txt");
+            FileWriter fileWriter = null;
+             
+            fileWriter = new FileWriter(fileIt);
+            fileWriter.write(winText);
+            fileWriter.close();
+        } catch (IOException ex) {
+            System.out.println("unable to write");
+        }  
+      }
     
     /**
      *
      * @throws Exception
      */
-
+//come platform.runlater {update stuff}
     public void loadPage(JEditorPane jep, SokobanPropertyType fileProperty) {
 		// GET THE FILE NAME
 		PropertiesManager props = PropertiesManager.getPropertiesManager();
@@ -668,6 +779,7 @@ public void respondToSelectLevelRequest(String level) {    //check
 			jep.setText(fileHTML);
 		} catch (IOException ioe) {
 			errorHandler.processError(SokobanPropertyType.INVALID_URL_ERROR_TEXT);
+                        System.out.println("error loading");
 		}
 	} 
            
@@ -677,42 +789,21 @@ private void initStatsPane()
         // WE'LL DISPLAY ALL STATS IN A JEditorPane
         statsPane = new JEditorPane();
         statsPane.setEditable(false);
-       // statsPane.setContentType("text/html");
-        //read from file
-       File fileToOpen = new File("stats.txt");
-            String fileName = fileToOpen.getPath();
-          try {
-                if (fileToOpen != null) {
-                    // LET'S USE A FAST LOADING TECHNIQUE. WE'LL LOAD ALL OF THE
-                    // BYTES AT ONCE INTO A BYTE ARRAY, AND THEN PICK THAT APART.
-                    // THIS IS FAST BECAUSE IT ONLY HAS TO DO FILE READING ONCE
-                    byte[] bytes = new byte[Long.valueOf(fileToOpen.length()).intValue()];
-                    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-                    FileInputStream fis;
-            
-                fis = new FileInputStream(fileToOpen);
-             
-                    BufferedInputStream bis = new BufferedInputStream(fis);
-
-                    // HERE IT IS, THE ONLY READY REQUEST WE NEED
-                    bis.read(bytes);
-                    bis.close();
-
-                    // NOW WE NEED TO LOAD THE DATA FROM THE BYTE ARRAY
-                    DataInputStream dis = new DataInputStream(bais);
-    }} catch (Exception ex) {
-                Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
-                System.out.println("Error stats.txt does not exist");
-            }
-        // LOAD THE STARTING STATS PAGE, WHICH IS JUST AN OUTLINE
-        // AND DOESN"T HAVE ANY OF THE STATS, SINCE THOSE WILL 
-        // BE DYNAMICALLY ADDED
-      /*  loadPage(statsPane, SokobanPropertyType.STATS_FILE_NAME);
-        HTMLDocument statsDoc = (HTMLDocument)statsPane.getDocument();
-            docManager.setStatsDoc(statsDoc);  
-       */ statsSwingNode.setContent(statsPane);
+       
+         try {
+             String content = new String(Files.readAllBytes(Paths.get("stats.txt"))); 
+            statsPane.setText(content); 
+         }
+             catch (IOException ex) {
+             Logger.getLogger(SokobanUI.class.getName()).log(Level.SEVERE, null, ex);
+             System.out.println("error reading");
+         }
+         
+           
+        statsSwingNode.setContent(statsPane); 
+       mainPane.setCenter(statsSwingNode);  //done
+       mainPane.setTop(northToolbar);
         statsScrollPane = new ScrollPane();
-        statsScrollPane.setContent(statsSwingNode);
         statsScrollPane.setPrefWidth(mainPane.getWidth());   //check
         statsScrollPane.setPrefHeight(mainPane.getHeight());  
         statsScrollPane.setFitToWidth(true);
@@ -722,8 +813,7 @@ private void initStatsPane()
         
         // NOW ADD IT TO THE WORKSPACE, MEANING WE CAN SWITCH TO IT
         //workspace.add(statsScrollPane, HangManUIState.VIEW_STATS_STATE.toString());
-        workspace.getChildren().add(statsScrollPane);     //check
-        statsScrollPane.setVisible(false);   //set invisible initially
+
     }
 
 
@@ -799,7 +889,6 @@ class GridRenderer extends Canvas {
                             break;
                         case 6:
                             gc.drawImage(sokobanImage, x, y, w, h);   //sokoban over place
-                            placesNeeded++;
                             SokoI = i;   //save coordinates
                             SokoJ = j;
                             break;
@@ -875,6 +964,8 @@ class GridRenderer extends Canvas {
         gameButton = initToolbarButton(northToolbar,
                 SokobanPropertyType.GAME_IMG_NAME);
         gameButton.setText("Game");
+        gameButton.setFocusTraversable(false);
+        gameButton.setVisible(false);
         //setTooltip(gameButton, SokobanPropertyType.GAME_TOOLTIP);
         gameButton.setOnAction(new EventHandler<ActionEvent>() {
 
@@ -891,6 +982,7 @@ class GridRenderer extends Canvas {
                 SokobanPropertyType.STATS_IMG_NAME);
         //setTooltip(statsButton, SokobanPropertyType.STATS_TOOLTIP);
         statsButton.setText("Stats");
+        statsButton.setFocusTraversable(false);
         statsButton.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
@@ -932,7 +1024,6 @@ class GridRenderer extends Canvas {
         });
 */
         // AND NOW PUT THE NORTH TOOLBAR IN THE FRAME
-        mainPane.setTop(northToolbar);
         //mainPane.getChildren().add(northToolbar);
        
     }
@@ -1003,7 +1094,8 @@ class GridRenderer extends Canvas {
                 mainPane.setCenter(gamePanel);
                 break;
             case VIEW_STATS_STATE:
-                mainPane.setCenter(statsScrollPane);
+                initStatsPane();
+              
                 break;
             default:
         }
