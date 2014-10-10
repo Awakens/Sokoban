@@ -113,6 +113,8 @@ public class SokobanUI extends Pane {
     private final String blockedSounds = fileBlocked.toURI().toString();
     private Timeline timeline;
     private Timer time;
+    double pressedX;
+    double pressedY;
     private double level1wins; private double level1loses; private double level1percent; private String level1FastestWin = "-";
     private double level2wins; private double level2loses; private double level2percent; private String level2FastestWin = "-";
     private double level3wins; private double level3loses; private double level3percent; private String level3FastestWin = "-";
@@ -444,26 +446,590 @@ public void respondToSelectLevelRequest(String level) {    //check
     
          gridRenderer.repaint();
          
-          /* gridRenderer.setOnMouseDragged(mouseEvent ->  {
-             double w = gridRenderer.getWidth() / gridColumns;
-            double col = mouseEvent.getX() / w;
-            double h = gridRenderer.getHeight() / gridRows;
-            double row = mouseEvent.getY() / h;
-            mouseEvent.getX();
-            gridRenderer.setOnMouseDragged(e -> {});
-                gridRenderer.getGraphicsContext2D();}
-         */
-         //come
-          gridRenderer.setOnMouseClicked(mouseEvent -> {
+         gridRenderer.setOnMousePressed(mouseMagic -> {
+           pressedX = mouseMagic.getX();
+          pressedY = mouseMagic.getY();});
+           gridRenderer.setOnMouseReleased(mouseEventer ->  {
+             boolean blocked = false;  //track if sokoban was blocked
+            if(time.getCount() == 0)       //check time renderer
+            { if(level.equals("Level 1"))
+            {level1loses++; }
+            if(level.equals("Level 2"))
+            {level2loses++; }
+            if(level.equals("Level 3"))
+            {level3loses++; }
+            if(level.equals("Level 4"))
+            {level4loses++; }
+            if(level.equals("Level 5"))
+            {level5loses++; }
+            if(level.equals("Level 6"))
+            {level6loses++; }
+            if(level.equals("Level 7"))
+            {level7loses++; }
+                gridRenderer.setFocusTraversable(false);   //make gridRenderer unkeyable
+                gridRenderer.setDisable(true);
+                if(winLabel.isVisible() == false) loseLabel.setVisible(true);
+              OK.setVisible(true); OK.setFocusTraversable(true);
+             OK.focusedProperty(); OK.isFocused(); 
+             try{ loseSound();}catch(Exception echo){System.out.println("loseSound error");}
+             return;}
+            //We make a new array that copies over the grid[][] at this moment 
+            // saving grid just copies address
+              int[][] newArray = new int[grid.length][grid[0].length];
+              for(int o = 0; o < grid.length; o++)   //grid.length = columns   grid[0].length = rows
+              { for(int p = 0; p < grid[0].length; p++)
+              { newArray[o][p] = grid[o][p];
+              }}       
             // FIGURE OUT THE CORRESPONDING COLUMN & ROW
-            double w = gridRenderer.getWidth() / gridColumns;
-            //double col = mouseEvent.getX() / w;
-            double h = gridRenderer.getHeight() / gridRows;
-            double row = mouseEvent.getY() / h;
+            double w = gridRenderer.getWidth() / grid.length;
+            double col = mouseEventer.getX() / w;
+            double pressedCol = pressedX / w;
+            double h = gridRenderer.getHeight() / grid[0].length;
+            double row = mouseEventer.getY() / h;
+            double pressedRow = pressedY / w;
+            int value = grid[(int) col][(int) row];                   
+            sokoI = gridRenderer.getSokoI();    //check sokobon placement
+            sokoJ = gridRenderer.getSokoJ();
+            System.out.println(value + "   " + col + "   " + row);
+            for(int forLooper = 0; forLooper < 1; forLooper++)
+            { if((int) pressedCol != sokoI || (int) pressedRow != sokoJ) {break;}
+                if(sokoI == (int) col && sokoJ+1 == (int) row) //if tile clicked is below sokoban
+            { moveStack.add(newArray);  //save original level grid 
+                    if(grid[sokoI][sokoJ+1] == 0)     //check if panel below is empty
+                {   grid[sokoI][sokoJ+1] = 4;   //move sokoban by 1 row if panel below is empty
+                   if(grid[sokoI][sokoJ] == 6)
+                   {    grid[sokoI][sokoJ] = 3;
+                   grid[sokoI][sokoJ+1] = 4;  }     //turn new soko spot into regular soko
+                   else
+                    grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from                   
+                    SokoJ+=1; gridRenderer.repaint();               //incre soko placement
+                    break;}
+        if(grid[sokoI][sokoJ+1] == 1) {blocked = true; break;}  //exit if wall
+      
+        if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
+      {if(grid[sokoI][sokoJ+2] == 1 || grid[sokoI][sokoJ+2] == 5 || grid[sokoI][sokoJ+2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ+2] = 2;       //move box  
+        grid[sokoI][sokoJ+1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+        {   grid[sokoI][sokoJ] = 3;
+           grid[sokoI][sokoJ+1] = 4;  }     //turn new soko spot into regular soko
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+        
+         if(grid[sokoI][sokoJ+1] == 5)   //if box with place
+      {if(grid[sokoI][sokoJ+2] == 1 || grid[sokoI][sokoJ+2] == 5 || grid[sokoI][sokoJ+2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ+2] = 2;       //move box  
+        grid[sokoI][sokoJ+1] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+         
+ if(grid[sokoI][sokoJ+1] == 3){     //ifplace
+      grid[sokoI][sokoJ+1] = 6;   //move by row
+      if(grid[sokoI][sokoJ] == 6)
+          grid[sokoI][sokoJ] = 3;
+      else
+          grid[sokoI][sokoJ] = 0;
+        SokoJ+=1; gridRenderer.repaint();  break; }   } 
+            if(sokoI == (int) col && sokoJ-1 == (int) row) //if tile clicked is above ofsokoban
+            { moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI][sokoJ-1] == 0)     //check if panel above is empty
+    {  grid[sokoI][sokoJ-1] = 4;   //move sokoban up by 1 row if panel above is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+       grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
+      SokoJ-=1;  gridRenderer.repaint(); 
+            break;}
+      if(grid[sokoI][sokoJ-1] == 1) {blocked = true; break;}  //exit if wall
+      
+      if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
+      {if(grid[sokoI][sokoJ-2] == 1 || grid[sokoI][sokoJ-2] == 5 || grid[sokoI][sokoJ-2] == 2) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
+       if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ-2] = (2);       //move box
+        grid[sokoI][sokoJ-1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0; 
+        SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+      
+               if(grid[sokoI][sokoJ-1] == 5)   //if box with place
+      {if(grid[sokoI][sokoJ-2] == 1 || grid[sokoI][sokoJ-2] == 5 || grid[sokoI][sokoJ-2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ-2] = 2;       //move box  
+        grid[sokoI][sokoJ-1] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ-=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+               
+ if(grid[sokoI][sokoJ-1] == 3){     //if place
+      grid[sokoI][sokoJ-1] = 6;   //move by row
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
+        SokoJ-=1;  gridRenderer.repaint(); break;
+           }}
             
-                    
-                sokoI = gridRenderer.getSokoI();    //check sokobon placement
-                sokoJ = gridRenderer.getSokoJ();
+            
+            if(sokoI-1 == (int) col && sokoJ == (int) row) //if tile clicked is left of sokoban
+            {
+            moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI-1][sokoJ] == 0)     //check if left panel  is empty
+    {  grid[sokoI-1][sokoJ] = 4;   //move sokoban left by 1  if left panel is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+       grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
+       SokoI-=1; gridRenderer.repaint();  
+       break;}
+       if(grid[sokoI-1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
+      if(grid[sokoI-1][sokoJ] == 2)    //if box in left panel 
+      {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in left panel and the left panel box is not a wall
+      { if(grid[sokoI-2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
+        grid[sokoI-1][sokoJ] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+      
+               if(grid[sokoI-1][sokoJ] == 5)   //if box with place
+      {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI-2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI-2][sokoJ] = 2;       //move box  
+        grid[sokoI-1][sokoJ] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoI-=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+               
+ if(grid[sokoI-1][sokoJ] == 3){     //if place
+      grid[sokoI-1][sokoJ] = 6;   //move left
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
+        SokoI-=1; gridRenderer.repaint(); break;
+           }}
+            
+            if(sokoI+1 == (int) col && sokoJ == (int) row) //if tile clicked is right of sokoban
+            {
+           moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
+    {  grid[sokoI+1][sokoJ] = 4;   //move sokoban right by 1  if rigbht panel is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+       grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
+       SokoI+=1; gridRenderer.repaint(); 
+       break;}
+        if(grid[sokoI+1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
+      if(grid[sokoI+1][sokoJ] == 2)    //if box in right panel 
+{if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
+       if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI+2][sokoJ] = (2);       //move box
+        grid[sokoI+1][sokoJ] = 4;       //then move sokoban
+         SokoI+=1; 
+         if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+             grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+ if(grid[sokoI+1][sokoJ] == 3){     //if place
+      grid[sokoI+1][sokoJ] = 6;   //move right   
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
+          SokoI+=1; gridRenderer.repaint();  break;
+           }
+                 if(grid[sokoI+1][sokoJ] == 5)   //if box with place
+      {if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI+2][sokoJ] = 2;       //move box  
+        grid[sokoI+1][sokoJ] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoI+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+          }
+            }
+             if(blocked == true)
+            { try{blockedSound(); blocked = false;}
+            catch(Exception eoi){System.out.println("blocked no exist");}}
+            
+            else if(placesNeeded == 0)  //if won
+            {            { if(level.equals("Level 1"))
+            {level1wins++;  level1FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 2"))
+            {level2wins++;  level2FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 3"))
+            {level3wins++;  level3FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 4"))
+            {level4wins++;  level4FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 5"))
+            {level5wins++;  level5FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 6"))
+            {level6wins++;  level6FastestWin = time.getCount() + "";  }
+            if(level.equals("Level 7"))
+            {level7wins++;  level7FastestWin = time.getCount() + ""; }
+                winLabel.setVisible(true); OK.setVisible(true);
+             gridRenderer.setFocusTraversable(false);
+             gridRenderer.setDisable(true);
+           OK.setFocusTraversable(true);
+           OK.focusTraversableProperty();
+           OK.focusedProperty();}
+             try{ winSound();}catch(Exception echo){System.out.println("winSound error");}}
+            else if(numBoxesBlocked == numBoxes && placesNeeded != 0)
+            {        if(level.equals("Level 1"))
+            {level1loses++; }
+            if(level.equals("Level 2"))
+            {level2loses++; }
+            if(level.equals("Level 3"))
+            {level3loses++; }
+            if(level.equals("Level 4"))
+            {level4loses++; }
+            if(level.equals("Level 5"))
+            {level5loses++; }
+            if(level.equals("Level 6"))
+            {level6loses++;}
+            if(level.equals("Level 7"))
+            {level7loses++; }
+                loseLabel.setVisible(true); OK.setVisible(true);
+             gridRenderer.setFocusTraversable(false);
+             gridRenderer.setDisable(true);
+           OK.setFocusTraversable(true);
+           OK.focusTraversableProperty();
+           OK.focusedProperty();
+            try{ loseSound();}catch(Exception echo){System.out.println("loseSound error");}}
+            else
+            {      try{ moveSound();}
+            catch(Exception ex){}
+         }
+                   
+            
+                
+          });    
+         
+         
+          gridRenderer.setOnMouseClicked(mouseEvent -> {
+              boolean blocked = false;  //track if sokoban was blocked
+            if(time.getCount() == 0)       //check time renderer
+            { if(level.equals("Level 1"))
+            {level1loses++; }
+            if(level.equals("Level 2"))
+            {level2loses++; }
+            if(level.equals("Level 3"))
+            {level3loses++; }
+            if(level.equals("Level 4"))
+            {level4loses++; }
+            if(level.equals("Level 5"))
+            {level5loses++; }
+            if(level.equals("Level 6"))
+            {level6loses++; }
+            if(level.equals("Level 7"))
+            {level7loses++; }
+                gridRenderer.setFocusTraversable(false);   //make gridRenderer unkeyable
+                gridRenderer.setDisable(true);
+                if(winLabel.isVisible() == false) loseLabel.setVisible(true);
+              OK.setVisible(true); OK.setFocusTraversable(true);
+             OK.focusedProperty(); OK.isFocused(); 
+             try{ loseSound();}catch(Exception echo){System.out.println("loseSound error");}
+             return;}
+            //We make a new array that copies over the grid[][] at this moment 
+            // saving grid just copies address
+              int[][] newArray = new int[grid.length][grid[0].length];
+              for(int o = 0; o < grid.length; o++)   //grid.length = columns   grid[0].length = rows
+              { for(int p = 0; p < grid[0].length; p++)
+              { newArray[o][p] = grid[o][p];
+              }}       
+            // FIGURE OUT THE CORRESPONDING COLUMN & ROW
+            double w = gridRenderer.getWidth() / grid.length;
+            double col = mouseEvent.getX() / w;
+            double h = gridRenderer.getHeight() / grid[0].length;
+            double row = mouseEvent.getY() / h;
+            int value = grid[(int) col][(int) row];                   
+            sokoI = gridRenderer.getSokoI();    //check sokobon placement
+            sokoJ = gridRenderer.getSokoJ();
+            System.out.println(value + "   " + col + "   " + row);
+            for(int forLooper = 0; forLooper < 1; forLooper++)
+            {if(sokoI == (int) col && sokoJ+1 == (int) row) //if tile clicked is below sokoban
+            { moveStack.add(newArray);  //save original level grid 
+                    if(grid[sokoI][sokoJ+1] == 0)     //check if panel below is empty
+                {   grid[sokoI][sokoJ+1] = 4;   //move sokoban by 1 row if panel below is empty
+                   if(grid[sokoI][sokoJ] == 6)
+                   {    grid[sokoI][sokoJ] = 3;
+                   grid[sokoI][sokoJ+1] = 4;  }     //turn new soko spot into regular soko
+                   else
+                    grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from                   
+                    SokoJ+=1; gridRenderer.repaint();               //incre soko placement
+                    break;}
+        if(grid[sokoI][sokoJ+1] == 1) {blocked = true; break;}  //exit if wall
+      
+        if(grid[sokoI][sokoJ+1] == 2)    //if box in panel below
+      {if(grid[sokoI][sokoJ+2] == 1 || grid[sokoI][sokoJ+2] == 5 || grid[sokoI][sokoJ+2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ+2] = 2;       //move box  
+        grid[sokoI][sokoJ+1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+        {   grid[sokoI][sokoJ] = 3;
+           grid[sokoI][sokoJ+1] = 4;  }     //turn new soko spot into regular soko
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+        
+         if(grid[sokoI][sokoJ+1] == 5)   //if box with place
+      {if(grid[sokoI][sokoJ+2] == 1 || grid[sokoI][sokoJ+2] == 5 || grid[sokoI][sokoJ+2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ+2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ+2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ+2] = 2;       //move box  
+        grid[sokoI][sokoJ+1] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+         
+ if(grid[sokoI][sokoJ+1] == 3){     //ifplace
+      grid[sokoI][sokoJ+1] = 6;   //move by row
+      if(grid[sokoI][sokoJ] == 6)
+          grid[sokoI][sokoJ] = 3;
+      else
+          grid[sokoI][sokoJ] = 0;
+        SokoJ+=1; gridRenderer.repaint();  break; }   } 
+            if(sokoI == (int) col && sokoJ-1 == (int) row) //if tile clicked is above ofsokoban
+            { moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI][sokoJ-1] == 0)     //check if panel above is empty
+    {  grid[sokoI][sokoJ-1] = 4;   //move sokoban up by 1 row if panel above is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+       grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
+      SokoJ-=1;  gridRenderer.repaint(); 
+            break;}
+      if(grid[sokoI][sokoJ-1] == 1) {blocked = true; break;}  //exit if wall
+      
+      if(grid[sokoI][sokoJ-1] == 2)    //if box in panel above
+      {if(grid[sokoI][sokoJ-2] == 1 || grid[sokoI][sokoJ-2] == 5 || grid[sokoI][sokoJ-2] == 2) {blocked = true; break;}    //break if there box in panel below and the panel above box is not a wall or null
+       if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ-2] = (2);       //move box
+        grid[sokoI][sokoJ-1] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0; 
+        SokoJ-=1;  gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+      
+               if(grid[sokoI][sokoJ-1] == 5)   //if box with place
+      {if(grid[sokoI][sokoJ-2] == 1 || grid[sokoI][sokoJ-2] == 5 || grid[sokoI][sokoJ-2] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI][sokoJ-2] == 3)    //if is a place
+      {  grid[sokoI][sokoJ-2] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI][sokoJ-2] = 2;       //move box  
+        grid[sokoI][sokoJ-1] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoJ-=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+               
+ if(grid[sokoI][sokoJ-1] == 3){     //if place
+      grid[sokoI][sokoJ-1] = 6;   //move by row
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
+        SokoJ-=1;  gridRenderer.repaint(); break;
+           }}
+            
+            
+            if(sokoI-1 == (int) col && sokoJ == (int) row) //if tile clicked is left of sokoban
+            {
+            moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI-1][sokoJ] == 0)     //check if left panel  is empty
+    {  grid[sokoI-1][sokoJ] = 4;   //move sokoban left by 1  if left panel is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+       grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
+       SokoI-=1; gridRenderer.repaint();  
+       break;}
+       if(grid[sokoI-1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
+      if(grid[sokoI-1][sokoJ] == 2)    //if box in left panel 
+      {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in left panel and the left panel box is not a wall
+      { if(grid[sokoI-2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
+        grid[sokoI-1][sokoJ] = 4;       //then move sokoban
+        if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  }} //empty out the space where sokoban was
+      
+               if(grid[sokoI-1][sokoJ] == 5)   //if box with place
+      {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI-2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI-2][sokoJ] = 2;       //move box  
+        grid[sokoI-1][sokoJ] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoI-=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+               
+ if(grid[sokoI-1][sokoJ] == 3){     //if place
+      grid[sokoI-1][sokoJ] = 6;   //move left
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
+        SokoI-=1; gridRenderer.repaint(); break;
+           }}
+            
+            if(sokoI+1 == (int) col && sokoJ == (int) row) //if tile clicked is right of sokoban
+            {
+           moveStack.add(newArray);  //save original level grid 
+     if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
+    {  grid[sokoI+1][sokoJ] = 4;   //move sokoban right by 1  if rigbht panel is empty
+    if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+       grid[sokoI][sokoJ] = 0;           //reset where sokoban moved from
+       SokoI+=1; gridRenderer.repaint(); 
+       break;}
+        if(grid[sokoI+1][sokoJ] == 1) {blocked = true; break;}  //exit if wall  
+      if(grid[sokoI+1][sokoJ] == 2)    //if box in right panel 
+{if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
+       if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI+2][sokoJ] = (2);       //move box
+        grid[sokoI+1][sokoJ] = 4;       //then move sokoban
+         SokoI+=1; 
+         if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+             grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
+ if(grid[sokoI+1][sokoJ] == 3){     //if place
+      grid[sokoI+1][sokoJ] = 6;   //move right   
+      if(grid[sokoI][sokoJ] == 6)
+                       grid[sokoI][sokoJ] = 3;
+                   else
+      grid[sokoI][sokoJ] = 0;
+          SokoI+=1; gridRenderer.repaint();  break;
+           }
+                 if(grid[sokoI+1][sokoJ] == 5)   //if box with place
+      {if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
+        if(grid[sokoI+2][sokoJ] == 3)    //if is a place
+      {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
+           placesNeeded--;}
+        else  grid[sokoI+2][sokoJ] = 2;       //move box  
+        grid[sokoI+1][sokoJ] = 6;       //then move sokoban on top of place
+        if(grid[sokoI][sokoJ] == 6)
+           grid[sokoI][sokoJ] = 3;           
+        else
+      grid[sokoI][sokoJ] = 0;           //empty out the space where sokoban was
+        SokoI+=1;  gridRenderer.repaint(); 
+             break;  } //incre sokoban place
+          }
+            }
+             if(blocked == true)
+            { try{blockedSound(); blocked = false;}
+            catch(Exception eoi){System.out.println("blocked no exist");}}
+            
+            else if(placesNeeded == 0)  //if won
+            {            { if(level.equals("Level 1"))
+            {level1wins++;  level1FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 2"))
+            {level2wins++;  level2FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 3"))
+            {level3wins++;  level3FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 4"))
+            {level4wins++;  level4FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 5"))
+            {level5wins++;  level5FastestWin = time.getCount() + ""; }
+            if(level.equals("Level 6"))
+            {level6wins++;  level6FastestWin = time.getCount() + "";  }
+            if(level.equals("Level 7"))
+            {level7wins++;  level7FastestWin = time.getCount() + ""; }
+                winLabel.setVisible(true); OK.setVisible(true);
+             gridRenderer.setFocusTraversable(false);
+             gridRenderer.setDisable(true);
+           OK.setFocusTraversable(true);
+           OK.focusTraversableProperty();
+           OK.focusedProperty();}
+             try{ winSound();}catch(Exception echo){System.out.println("winSound error");}}
+            else if(numBoxesBlocked == numBoxes && placesNeeded != 0)
+            {        if(level.equals("Level 1"))
+            {level1loses++; }
+            if(level.equals("Level 2"))
+            {level2loses++; }
+            if(level.equals("Level 3"))
+            {level3loses++; }
+            if(level.equals("Level 4"))
+            {level4loses++; }
+            if(level.equals("Level 5"))
+            {level5loses++; }
+            if(level.equals("Level 6"))
+            {level6loses++;}
+            if(level.equals("Level 7"))
+            {level7loses++; }
+                loseLabel.setVisible(true); OK.setVisible(true);
+             gridRenderer.setFocusTraversable(false);
+             gridRenderer.setDisable(true);
+           OK.setFocusTraversable(true);
+           OK.focusTraversableProperty();
+           OK.focusedProperty();
+            try{ loseSound();}catch(Exception echo){System.out.println("loseSound error");}}
+            else
+            {      try{ moveSound();}
+            catch(Exception ex){}
+         }
+                   
+            
                 
           });    
              gridRenderer.setFocusTraversable(true);  //yay need this check
@@ -654,18 +1220,7 @@ public void respondToSelectLevelRequest(String level) {    //check
       grid[sokoI][sokoJ] = 0;
         SokoI-=1; gridRenderer.repaint(); break;
            }
-  /*  if(grid[sokoI-1][sokoJ] == 5)    //if box in left panel 
-  {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in left panel and the left panel box is not a wall
-       if(grid[sokoI-2][sokoJ] == 3)    //if is a place
-      {  grid[sokoI-2][sokoJ] = 5;      //place box on top of place
-           placesNeeded--;}
-        else  grid[sokoI-2][sokoJ] = (grid[sokoI-1][sokoJ]);       //move box
-        grid[sokoI-1][sokoJ] = 6;       //then move sokoban
-        if(grid[sokoI][sokoJ] == 6)
-                       grid[sokoI][sokoJ] = 3;
-                   else
-      grid[sokoI][sokoJ] = 0; SokoI-=1; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
- */
+
  case RIGHT: moveStack.add(newArray);  //save original level grid 
      if(grid[sokoI+1][sokoJ] == 0)     //check if right panel  is empty
     {  grid[sokoI+1][sokoJ] = 4;   //move sokoban right by 1  if rigbht panel is empty
@@ -696,19 +1251,6 @@ public void respondToSelectLevelRequest(String level) {    //check
       grid[sokoI][sokoJ] = 0;
           SokoI+=1; gridRenderer.repaint();  break;
            }
- /* if(grid[sokoI+1][sokoJ] == 5)    //if box with place in right panel 
-  {if(grid[sokoI-2][sokoJ] == 1 || grid[sokoI-2][sokoJ] == 5 || grid[sokoI-2][sokoJ] == 2) {blocked = true; break;}    //continue if there box in right panel and the right panel box is not a wall
-       if(grid[sokoI+2][sokoJ] == 3)    //if is a place
-      {  grid[sokoI+2][sokoJ] = 5;      //place box on top of place
-           placesNeeded--;}
-        else  grid[sokoI+2][sokoJ] = (grid[sokoI+1][sokoJ]);       //move box
-        grid[sokoI+1][sokoJ] = 6;       //then move sokoban ontop of place
-         SokoI+=1; 
-         if(grid[sokoI][sokoJ] == 6)
-                       grid[sokoI][sokoJ] = 3;
-                   else
-         grid[sokoI][sokoJ] = 0; gridRenderer.repaint();  break;  } //empty out the space where sokoban was
- */
                  if(grid[sokoI+1][sokoJ] == 5)   //if box with place
       {if(grid[sokoI+2][sokoJ] == 1 || grid[sokoI+2][sokoJ] == 5 || grid[sokoI+2][sokoJ] == 2) {blocked = true; break;}   //continue if there box in panel below and the panel below box is not a wall or box or box with place
         if(grid[sokoI+2][sokoJ] == 3)    //if is a place
@@ -880,6 +1422,7 @@ class GridRenderer extends Canvas {
         }
 
         public void repaint() {
+            pressedX = 0; pressedY = 0;
             placesNeeded = 0;
             numBoxes = 0;
             numBoxesBlocked = 0;
