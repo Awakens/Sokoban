@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.embed.swing.SwingNode;
 import properties_manager.PropertiesManager;
 import javafx.event.ActionEvent;
@@ -49,6 +50,7 @@ import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextBuilder;
+import javafx.util.Duration;
 import sokoban.file.SokobanFileLoader;
 
 public class SokobanUI extends Pane {
@@ -130,6 +132,7 @@ public class SokobanUI extends Pane {
         Image boxImage = new Image("file:images/box.png");
         Image placeImage = new Image("file:images/place.png");
         Image sokobanImage = new Image("file:images/Sokoban.png");
+        ImageView sokoMan = new ImageView(sokobanImage);
 
     // AND HERE IS THE GRID WE'RE MAKING
     private int gridColumns;
@@ -351,7 +354,7 @@ public void respondToSelectLevelRequest(String level) {    //check
                 new FileChooser.ExtensionFilter("Sokoban Files", "*.sok"));
      File fileToOpen = fileChooser.showOpenDialog(primaryStage);  
             String fileName = fileToOpen.getPath();
-    */
+    */  
      File fileToOpen = new File("data/" + level + ".sok");
             String fileName = fileToOpen.toURI().toString(); System.out.println(fileName);
             try {
@@ -1617,6 +1620,14 @@ class GridRenderer extends Canvas {
             }
 
         });
+        northToolbar.getChildren().add(sokoMan);
+        //Animation  transition
+        TranslateTransition tt = new TranslateTransition(Duration.millis(2000), sokoMan);
+     tt.setByX(200f);
+     tt.setCycleCount(5000);
+     tt.setAutoReverse(true);
+ 
+     tt.play();
        
         /*// MAKE AND INIT THE HELP BUTTON
         helpButton = initToolbarButton(northToolbar,
