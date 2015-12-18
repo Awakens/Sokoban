@@ -1,0 +1,7 @@
+Level 1 Number of wins: 1.0   Number of loses: 0.0   Winning percentage: 100.0%   Fastest win: 14 seconds
+Level 2 Number of wins: 0.0   Number of loses: 3.0   Winning percentage: 0.0%   Fastest win: - seconds
+Level 3 Number of wins: 0.0   Number of loses: 0.0   Winning percentage: 100.0%   Fastest win: - seconds
+Level 4 Number of wins: 0.0   Number of loses: 0.0   Winning percentage: 100.0%   Fastest win: - seconds
+Level 5 Number of wins: 0.0   Number of loses: 0.0   Winning percentage: 100.0%   Fastest win: - seconds
+Level 6 Number of wins: 0.0   Number of loses: 0.0   Winning percentage: 100.0%   Fastest win: - seconds
+Level 7 Number of wins: 0.0   Number of loses: 0.0   Winning percentage: 100.0%   Fastest win: - seconds
